@@ -1,5 +1,9 @@
 # Pre-commit hooks — enforced for every commit. Bypass via --no-verify
 # is forbidden per docs/WORKFLOW.md §5.2.
+#
+# Fast static checks only. Test execution (`vitest run`) moved to
+# Layer 3 (story acceptance gate) because strict TDD requires RED
+# commits to contain failing tests by design. See WORKFLOW.md §5.2.
 pre-commit:
   parallel: true
   commands:
@@ -9,5 +13,3 @@ pre-commit:
       run: npm run lint
     format-check:
       run: npm run format:check
-    test:
-      run: npm run test

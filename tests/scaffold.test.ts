@@ -114,13 +114,14 @@ describe('scaffold: lefthook', () => {
     expect(yml).toMatch(/^pre-commit:/m)
   })
 
-  it('pre-commit runs typecheck, lint, format:check, and test', () => {
+  it('pre-commit runs typecheck, lint, and format:check (fast static gates)', () => {
     const yml = readFileSync('lefthook.yml', 'utf8')
-    // Must invoke each of the four npm scripts. Order doesn't matter for the assertion.
+    // Must invoke the three static-check npm scripts. Order doesn't matter.
+    // vitest run is deliberately NOT in pre-commit — strict TDD requires
+    // RED commits to contain failing tests. See WORKFLOW.md §5.2.
     expect(yml).toMatch(/npm run typecheck/)
     expect(yml).toMatch(/npm run lint/)
     expect(yml).toMatch(/npm run format:check/)
-    expect(yml).toMatch(/npm run test/)
   })
 
   it('package.json lists lefthook as a dev dependency', () => {

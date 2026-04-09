@@ -182,23 +182,38 @@ One full cycle implements **one** acceptance criterion. Multi-AC stories run mul
 
 Enforced by the agent performing the phase and verified by the next agent in the chain. See Section 4.
 
-### 5.2 Layer 2 — Per-commit gates (automated)
+### 5.2 Layer 2 — Per-commit gates (automated, fast static checks only)
 
 Every commit must pass these checks. Enforced by **lefthook** `pre-commit` hook. Bypassing with `--no-verify` is forbidden per global project standards.
 
 1. `tsc --noEmit` — strict config, zero errors
 2. `eslint` — zero warnings
 3. `prettier --check` — formatting clean
-4. `vitest run` — all tests pass
-5. **Architecture check**: no `src/ui/` import from `src/core/` (ESLint `no-restricted-imports`)
-6. **Purity check**: no `Math.random` in `src/core/` (ESLint `no-restricted-syntax`)
-7. **Type hygiene**: no `any` (`@typescript-eslint/no-explicit-any`)
-8. **Coverage floor**: `src/core/` >= 95% lines, `src/ui/` no floor
-9. **NaN fuzz**: energy conservation fuzz test passes (multiple seeds x 5000 ticks, `Number.isFinite` on every value)
+4. **Architecture check**: no `src/ui/` import from `src/core/` (ESLint `no-restricted-imports`)
+5. **Purity check**: no `Math.random` in `src/core/` (ESLint `no-restricted-syntax`)
+6. **Type hygiene**: no `any` (`@typescript-eslint/no-explicit-any`)
+
+**Why `vitest run` is NOT a per-commit gate**: strict TDD requires RED commits to contain a failing test by design. Enforcing "all tests pass" at commit time directly conflicts with "commit the failing test first" — the two rules cannot both hold. Moving test execution to Layer 3 (story acceptance) preserves the invariant "every *accepted story* passes all tests" while allowing the RED phase to exist at all.
+
+Developers are still expected to run `npm test` frequently during local development. The hard enforcement point is story acceptance, not individual commits.
 
 ### 5.3 Layer 3 — Story gates (Definition of Done)
 
-Enforced by Lead and PO at story acceptance. See Section 3.5.
+Enforced by Lead and PO at story acceptance.
+
+Before a story can be accepted, team-lead must verify:
+
+1. `npm run typecheck` — clean
+2. `npm run lint` — exit 0
+3. `npm run format:check` — exit 0
+4. **`npm run test` — all tests pass** (moved here from Layer 2)
+5. **`npm run test:coverage` — all coverage thresholds met** (`src/core/` ≥ 95% lines/functions/statements, ≥ 90% branches)
+6. **NaN fuzz**: energy conservation fuzz test passes (once implemented in Phase 5 — multiple seeds × 5000 ticks, `Number.isFinite` on every value)
+7. Every acceptance criterion for the story has at least one test that went RED → GREEN → PURPLE
+8. Team-lead has reviewed the story's commits against the spec
+9. PO has explicitly accepted the story (see §3.5 for the full Definition of Done)
+
+The git commit graph for a story will typically show: one or more RED commits with failing tests, one or more GREEN commits restoring all-green, and optional PURPLE refactor commits. The final tip of the story must be all-green; intermediate RED commits are allowed and expected.
 
 ## 6. Strict TypeScript enforcement
 
