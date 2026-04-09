@@ -1,0 +1,13 @@
+# Pre-commit hooks — enforced for every commit. Bypass via --no-verify
+# is forbidden per docs/WORKFLOW.md §5.2.
+pre-commit:
+  parallel: true
+  commands:
+    typecheck:
+      run: npm run typecheck
+    lint:
+      run: npm run lint
+    format:
+      run: npm run format:check
+    test:
+      run: npm run test

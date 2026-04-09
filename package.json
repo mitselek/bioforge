@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Terminal-based ecosystem simulation with Turing-machine genomes",
   "scripts": {
+    "prepare": "lefthook install",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
@@ -20,6 +21,7 @@
     "@typescript-eslint/parser": "^8.58.1",
     "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^9.39.4",
+    "lefthook": "^2.1.5",
     "prettier": "^3.8.1",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
