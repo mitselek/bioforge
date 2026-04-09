@@ -7,7 +7,7 @@ pre-commit:
       run: npm run typecheck
     lint:
       run: npm run lint
-    format:
+    format-check:
       run: npm run format:check
     test:
       run: npm run test
