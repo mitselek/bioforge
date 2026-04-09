@@ -909,8 +909,16 @@ Runtime guards can be disabled with a config flag for performance profiling, but
 
 ### 16.6 Coverage floor
 
-- `src/core/` ≥ 95% line coverage (Layer 2 gate)
-- `src/ui/` no floor
+Enforced by `vitest.config.ts` coverage thresholds against `src/core/**/*.ts` (excluding `src/ui/**` and `src/main.ts`):
+
+- **Lines ≥ 95%** (Layer 2 gate — the single most important metric)
+- **Functions ≥ 95%**
+- **Statements ≥ 95%**
+- **Branches ≥ 90%**
+
+`src/ui/` has no coverage floor (UI is smoke-tested only per §16.5).
+
+Rationale for the extra metrics beyond the bare line-coverage minimum: a file with no conditionals can reach 100% line coverage while being functionally untested. Adding function/statement/branch thresholds catches untested control-flow paths that line coverage would miss. The branch threshold is looser (90%) because short-circuit evaluations and type-narrowing guards frequently produce "impossible" branches that would need contrived tests.
 
 ### 16.7 Module responsibility
 
