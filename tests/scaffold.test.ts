@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 
 // Bootstrap sanity: this file exists and vitest can run it.
@@ -47,5 +47,33 @@ describe('scaffold: vitest coverage config', () => {
   it('excludes src/ui/ from coverage', () => {
     const content = readFileSync('vitest.config.ts', 'utf8')
     expect(content).toMatch(/exclude:\s*\[[^\]]*'src\/ui\/\*\*'/)
+  })
+})
+
+describe('scaffold: eslint config', () => {
+  it('eslint.config.js exists', () => {
+    expect(existsSync('eslint.config.js')).toBe(true)
+  })
+
+  it('forbids any type', () => {
+    const content = readFileSync('eslint.config.js', 'utf8')
+    expect(content).toMatch(/@typescript-eslint\/no-explicit-any['"]\s*:\s*['"]error/)
+  })
+
+  it('enforces switch exhaustiveness', () => {
+    const content = readFileSync('eslint.config.js', 'utf8')
+    expect(content).toMatch(/@typescript-eslint\/switch-exhaustiveness-check['"]\s*:\s*['"]error/)
+  })
+
+  it('forbids core -> ui imports (architecture boundary)', () => {
+    const content = readFileSync('eslint.config.js', 'utf8')
+    expect(content).toMatch(/no-restricted-imports/)
+    expect(content).toMatch(/ui/)
+  })
+
+  it('forbids Math.random in src/core/ (purity)', () => {
+    const content = readFileSync('eslint.config.js', 'utf8')
+    expect(content).toMatch(/no-restricted-syntax/)
+    expect(content).toMatch(/Math['"]?\s*\]?\s*[,.].*random/i)
   })
 })
