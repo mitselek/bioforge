@@ -47,12 +47,13 @@ export function makeRng(seed: number): Rng {
       if (arr.length === 0) {
         throw new Error('rng.pick: empty array')
       }
-      const idx = Math.floor(float() * arr.length)
-      const value = arr[idx]
-      if (value === undefined) {
-        throw new Error(`rng.pick: unexpected undefined at index ${String(idx)}`)
-      }
-      return value
+      // idx ∈ [0, arr.length) is guaranteed by the length check and
+      // Math.floor(float() * arr.length). TypeScript's
+      // noUncheckedIndexedAccess still types arr[idx] as T | undefined,
+      // so we assert the narrowing. This is a spec §12 "we know more
+      // than TS" boundary: the invariant is controlled entirely by this
+      // function, not by caller input.
+      return arr[Math.floor(float() * arr.length)] as T
     },
   }
 }
