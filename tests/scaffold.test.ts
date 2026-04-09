@@ -77,3 +77,29 @@ describe('scaffold: eslint config', () => {
     expect(content).toMatch(/Math['"]?\s*\]?\s*[,.].*random/i)
   })
 })
+
+describe('scaffold: prettier config', () => {
+  it('.prettierrc exists', () => {
+    expect(existsSync('.prettierrc')).toBe(true)
+  })
+
+  it('has the expected style settings', () => {
+    const cfg = JSON.parse(readFileSync('.prettierrc', 'utf8'))
+    expect(cfg.semi).toBe(false)
+    expect(cfg.singleQuote).toBe(true)
+    expect(cfg.trailingComma).toBe('all')
+    expect(cfg.printWidth).toBe(100)
+    expect(cfg.tabWidth).toBe(2)
+    expect(cfg.arrowParens).toBe('always')
+  })
+
+  it('.prettierignore exists', () => {
+    expect(existsSync('.prettierignore')).toBe(true)
+  })
+
+  it('package.json has format and format:check scripts', () => {
+    const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
+    expect(pkg.scripts.format).toMatch(/prettier.*--write/)
+    expect(pkg.scripts['format:check']).toMatch(/prettier.*--check/)
+  })
+})
