@@ -35,12 +35,24 @@ export function makeRng(seed: number): Rng {
       return Math.floor(a + float() * (b - a + 1))
     },
     gaussian(mean: number, stddev: number): number {
-      throw new Error(
-        `rng.gaussian: not implemented (mean=${String(mean)}, stddev=${String(stddev)})`,
-      )
+      // Box-Muller transform. Discard the second sample for simplicity.
+      let u = 0
+      let v = 0
+      while (u === 0) u = float()
+      while (v === 0) v = float()
+      const z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v)
+      return mean + z * stddev
     },
     pick<T>(arr: readonly T[]): T {
-      throw new Error(`rng.pick: not implemented (arr.length=${String(arr.length)})`)
+      if (arr.length === 0) {
+        throw new Error('rng.pick: empty array')
+      }
+      const idx = Math.floor(float() * arr.length)
+      const value = arr[idx]
+      if (value === undefined) {
+        throw new Error(`rng.pick: unexpected undefined at index ${String(idx)}`)
+      }
+      return value
     },
   }
 }
