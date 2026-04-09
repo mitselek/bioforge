@@ -103,3 +103,33 @@ describe('scaffold: prettier config', () => {
     expect(pkg.scripts['format:check']).toMatch(/prettier.*--check/)
   })
 })
+
+describe('scaffold: lefthook', () => {
+  it('lefthook.yml exists', () => {
+    expect(existsSync('lefthook.yml')).toBe(true)
+  })
+
+  it('declares a pre-commit section', () => {
+    const yml = readFileSync('lefthook.yml', 'utf8')
+    expect(yml).toMatch(/^pre-commit:/m)
+  })
+
+  it('pre-commit runs typecheck, lint, format:check, and test', () => {
+    const yml = readFileSync('lefthook.yml', 'utf8')
+    // Must invoke each of the four npm scripts. Order doesn't matter for the assertion.
+    expect(yml).toMatch(/npm run typecheck/)
+    expect(yml).toMatch(/npm run lint/)
+    expect(yml).toMatch(/npm run format:check/)
+    expect(yml).toMatch(/npm run test/)
+  })
+
+  it('package.json lists lefthook as a dev dependency', () => {
+    const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
+    expect(pkg.devDependencies).toHaveProperty('lefthook')
+  })
+
+  it('package.json has a prepare script that installs lefthook hooks', () => {
+    const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
+    expect(pkg.scripts.prepare).toMatch(/lefthook install/)
+  })
+})
