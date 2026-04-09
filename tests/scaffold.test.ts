@@ -35,3 +35,17 @@ describe('scaffold: tsconfig extra strict flags', () => {
     expect(cfg.compilerOptions.forceConsistentCasingInFileNames).toBe(true)
   })
 })
+
+describe('scaffold: vitest coverage config', () => {
+  it('has v8 coverage provider with 95% line threshold on src/core/', () => {
+    const content = readFileSync('vitest.config.ts', 'utf8')
+    expect(content).toContain("provider: 'v8'")
+    expect(content).toContain('lines: 95')
+    expect(content).toContain("include: ['src/core/**/*.ts']")
+  })
+
+  it('excludes src/ui/ from coverage', () => {
+    const content = readFileSync('vitest.config.ts', 'utf8')
+    expect(content).toMatch(/exclude:\s*\[[^\]]*'src\/ui\/\*\*'/)
+  })
+})
