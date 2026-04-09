@@ -18,3 +18,20 @@ describe('scaffold: tsconfig strictness', () => {
     expect(cfg.compilerOptions.exactOptionalPropertyTypes).toBe(true)
   })
 })
+
+describe('scaffold: tsconfig extra strict flags', () => {
+  it('enforces remaining §12 strict and hygiene flags', () => {
+    const cfg = JSON.parse(readFileSync('tsconfig.json', 'utf8'))
+    expect(cfg.compilerOptions.noImplicitReturns).toBe(true)
+    expect(cfg.compilerOptions.noFallthroughCasesInSwitch).toBe(true)
+    expect(cfg.compilerOptions.noImplicitOverride).toBe(true)
+    expect(cfg.compilerOptions.noPropertyAccessFromIndexSignature).toBe(true)
+    expect(cfg.compilerOptions.noUnusedLocals).toBe(true)
+    expect(cfg.compilerOptions.noUnusedParameters).toBe(true)
+    expect(cfg.compilerOptions.allowUnreachableCode).toBe(false)
+    expect(cfg.compilerOptions.allowUnusedLabels).toBe(false)
+    expect(cfg.compilerOptions.isolatedModules).toBe(true)
+    expect(cfg.compilerOptions.verbatimModuleSyntax).toBe(true)
+    expect(cfg.compilerOptions.forceConsistentCasingInFileNames).toBe(true)
+  })
+})
