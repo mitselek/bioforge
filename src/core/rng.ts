@@ -13,6 +13,8 @@ export interface Rng {
   float(): number
   floatInRange(a: number, b: number): number
   intInRange(a: number, b: number): number
+  gaussian(mean: number, stddev: number): number
+  pick<T>(arr: readonly T[]): T
 }
 
 export function makeRng(seed: number): Rng {
@@ -31,6 +33,14 @@ export function makeRng(seed: number): Rng {
     },
     intInRange(a: number, b: number): number {
       return Math.floor(a + float() * (b - a + 1))
+    },
+    gaussian(mean: number, stddev: number): number {
+      throw new Error(
+        `rng.gaussian: not implemented (mean=${String(mean)}, stddev=${String(stddev)})`,
+      )
+    },
+    pick<T>(arr: readonly T[]): T {
+      throw new Error(`rng.pick: not implemented (arr.length=${String(arr.length)})`)
     },
   }
 }
