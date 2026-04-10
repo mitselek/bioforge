@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { randomGenome, mutateGenome } from '../src/core/genome.js'
+import { randomGenome, mutateGenome, mutateStats } from '../src/core/genome.js'
 import type { Opcode } from '../src/core/genome.js'
 import { makeRng } from '../src/core/rng.js'
 import { defaultConfig, makeConfig } from '../src/core/config.js'
@@ -257,6 +257,191 @@ describe('genome', () => {
           expect(inst.target).toBeLessThan(child.tape.length)
         }
       }
+    })
+  })
+
+  describe('mutateGenome op swap (BB fix)', () => {
+    it('swap always picks a different opcode (spec §8.2 strict)', () => {
+      // Spec §8.2 says op-swap picks "a different random opcode". With
+      // opSwap=1.0 and argDrift=0, every call swaps exactly one index
+      // and every other position is identity-copied. If the swap is
+      // allowed to roll the same opcode (1/9 chance under uniform pick),
+      // `anyDifferent` is false for that seed and the test fires.
+      //
+      // Across 100 seeds, the probability that a buggy impl never rolls
+      // same-opcode is (8/9)^100 ≈ 7.7e-6 — test catches the bug with
+      // probability > 99.999% on the first offending seed.
+      const cfg = makeConfig({
+        mutationRates: {
+          ...defaultConfig().mutationRates,
+          argDrift: 0,
+          opSwap: 1.0,
+          insert: 0,
+          delete: 0,
+          statDrift: 0,
+        },
+      })
+      const parent = randomGenome(makeRng(7), cfg)
+      for (let seed = 1; seed <= 100; seed++) {
+        const child = mutateGenome(makeRng(seed), parent, cfg)
+        const anyDifferent = child.tape.some((inst, i) => inst.op !== parent.tape[i]?.op)
+        expect(anyDifferent).toBe(true)
+      }
+    })
+  })
+
+  describe('mutateGenome insertion', () => {
+    const cfg = makeConfig({
+      mutationRates: {
+        ...defaultConfig().mutationRates,
+        argDrift: 0,
+        opSwap: 0,
+        insert: 1.0, // always insert
+        delete: 0,
+        statDrift: 0,
+      },
+    })
+
+    it('insertion grows tape by exactly 1', () => {
+      const parent = randomGenome(makeRng(7), cfg)
+      const parentLength = parent.tape.length
+      const child = mutateGenome(makeRng(42), parent, cfg)
+      expect(child.tape.length).toBe(parentLength + 1)
+    })
+
+    it('insertion is capped at maxTapeLength', () => {
+      // Force the parent to be at max length, then insert — should stay at max
+      const tightCfg = makeConfig({
+        ...cfg,
+        maxTapeLength: 5,
+        initialTapeLengthMin: 5,
+        initialTapeLengthMax: 5,
+      })
+      const parent = randomGenome(makeRng(7), tightCfg)
+      expect(parent.tape.length).toBe(5)
+      const child = mutateGenome(makeRng(42), parent, tightCfg)
+      expect(child.tape.length).toBe(5) // capped, no growth
+    })
+
+    it('inserted instruction is a valid opcode', () => {
+      const parent = randomGenome(makeRng(7), cfg)
+      const child = mutateGenome(makeRng(42), parent, cfg)
+      const validOpcodes = new Set<string>([
+        'MOVE_FORWARD',
+        'TURN_LEFT',
+        'TURN_RIGHT',
+        'SENSE_FOOD',
+        'SENSE_PREDATOR',
+        'SENSE_MATE',
+        'JUMP_IF_TRUE',
+        'JUMP_IF_FALSE',
+        'REPRODUCE',
+      ])
+      for (const inst of child.tape) {
+        expect(validOpcodes.has(inst.op)).toBe(true)
+      }
+    })
+  })
+
+  describe('mutateGenome deletion', () => {
+    const cfg = makeConfig({
+      mutationRates: {
+        ...defaultConfig().mutationRates,
+        argDrift: 0,
+        opSwap: 0,
+        insert: 0,
+        delete: 1.0, // always delete
+        statDrift: 0,
+      },
+    })
+
+    it('deletion shrinks tape by exactly 1', () => {
+      const parent = randomGenome(makeRng(7), cfg)
+      const parentLength = parent.tape.length
+      const child = mutateGenome(makeRng(42), parent, cfg)
+      expect(child.tape.length).toBe(parentLength - 1)
+    })
+
+    it('deletion is floored at minTapeLength', () => {
+      // Force the parent to be at min length, then delete — should stay at min
+      const tightCfg = makeConfig({
+        ...cfg,
+        minTapeLength: 3,
+        initialTapeLengthMin: 3,
+        initialTapeLengthMax: 3,
+      })
+      const parent = randomGenome(makeRng(7), tightCfg)
+      expect(parent.tape.length).toBe(3)
+      const child = mutateGenome(makeRng(42), parent, tightCfg)
+      expect(child.tape.length).toBe(3) // floored, no shrinkage
+    })
+  })
+
+  describe('mutateStats', () => {
+    const cfg = defaultConfig()
+
+    it('returns stats unchanged when drift rate is 0', () => {
+      const noDrift = makeConfig({
+        mutationRates: { ...cfg.mutationRates, statDrift: 0 },
+      })
+      const child = mutateStats(makeRng(42), cfg.species.herbivore, noDrift)
+      expect(child).toEqual(cfg.species.herbivore)
+    })
+
+    it('drifts numeric stats lognormally when drift fires', () => {
+      const heavyDrift = makeConfig({
+        mutationRates: {
+          ...cfg.mutationRates,
+          statDrift: 1.0, // always drift
+          statDriftSigma: 0.2,
+        },
+      })
+      const child = mutateStats(makeRng(42), cfg.species.herbivore, heavyDrift)
+      // Stats should differ from parent (with very high probability)
+      expect(child.maxSpeed).not.toBe(cfg.species.herbivore.maxSpeed)
+      expect(child.baseMetabolicRate).not.toBe(cfg.species.herbivore.baseMetabolicRate)
+    })
+
+    it('keeps stats finite and non-negative', () => {
+      const heavyDrift = makeConfig({
+        mutationRates: {
+          ...cfg.mutationRates,
+          statDrift: 1.0,
+          statDriftSigma: 0.5,
+        },
+      })
+      for (let seed = 1; seed <= 50; seed++) {
+        const child = mutateStats(makeRng(seed), cfg.species.herbivore, heavyDrift)
+        expect(Number.isFinite(child.maxSpeed)).toBe(true)
+        expect(child.maxSpeed).toBeGreaterThanOrEqual(0)
+        expect(Number.isFinite(child.baseMetabolicRate)).toBe(true)
+        expect(child.baseMetabolicRate).toBeGreaterThan(0)
+      }
+    })
+
+    it('clamps efficiency to [0.1, 0.99]', () => {
+      const heavyDrift = makeConfig({
+        mutationRates: {
+          ...cfg.mutationRates,
+          statDrift: 1.0,
+          statDriftSigma: 5.0, // huge drift to test clamping
+        },
+      })
+      for (let seed = 1; seed <= 100; seed++) {
+        const child = mutateStats(makeRng(seed), cfg.species.herbivore, heavyDrift)
+        expect(child.efficiency).toBeGreaterThanOrEqual(0.1)
+        expect(child.efficiency).toBeLessThanOrEqual(0.99)
+      }
+    })
+
+    it('does not mutate the parent stats', () => {
+      const parent = cfg.species.herbivore
+      const parentSnapshot = JSON.stringify(parent)
+      const heavyDrift = makeConfig({
+        mutationRates: { ...cfg.mutationRates, statDrift: 1.0, statDriftSigma: 0.2 },
+      })
+      mutateStats(makeRng(42), parent, heavyDrift)
+      expect(JSON.stringify(parent)).toBe(parentSnapshot)
     })
   })
 })

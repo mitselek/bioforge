@@ -8,7 +8,7 @@
  */
 
 import type { Rng } from './rng.js'
-import type { Config } from './config.js'
+import type { Config, SpeciesStats } from './config.js'
 
 export type Opcode =
   | 'MOVE_FORWARD'
@@ -167,4 +167,10 @@ function makeUniformRandomInstruction(rng: Rng, tapeLength: number): Instruction
     case 'JUMP_IF_FALSE':
       return { op, arg1: rng.float(), target: rng.intInRange(0, tapeLength - 1) }
   }
+}
+
+export function mutateStats(rng: Rng, parent: SpeciesStats, cfg: Config): SpeciesStats {
+  throw new Error(
+    `genome.mutateStats: not implemented (parentMaxSpeed=${String(parent.maxSpeed)} statDrift=${String(cfg.mutationRates.statDrift)} rngFloat=${typeof rng.float})`,
+  )
 }
