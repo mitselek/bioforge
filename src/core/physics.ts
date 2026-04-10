@@ -41,8 +41,6 @@ export function applyMovement(entity: Entity, dt: number, worldW: number, worldH
  * cost = (moveCostLinear * speed + moveCostQuadratic * speed²) * dt
  *
  * Story 4.1 AC2. Spec §5.2, §2.3.
- *
- * @stub — implementation pending GREEN phase
  */
 export function applyMovementCost(entity: Entity, dt: number, ledger: Ledger): void {
   const { x, y } = entity.velocity
