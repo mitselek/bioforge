@@ -38,12 +38,18 @@ const poolKey = (p: EnergyPool): string =>
   p.kind === 'soil' ? 'soil' : `${p.kind}#${String(p.id)}`
 
 export function makeLedger(opts: LedgerOptions): Ledger {
+  const total = opts.totalEnergy
   const epsilon = opts.epsilon ?? 1e-6
   const balances = new Map<string, number>()
   balances.set('soil', opts.initialSoil)
 
   const get = (pool: EnergyPool): number => {
-    return balances.get(poolKey(pool)) ?? 0
+    const k = poolKey(pool)
+    const v = balances.get(k)
+    if (v === undefined) {
+      throw new Error(`ledger: unknown pool ${k}`)
+    }
+    return v
   }
 
   return {
@@ -56,6 +62,12 @@ export function makeLedger(opts: LedgerOptions): Ledger {
       return sum
     },
     register(pool: EnergyPool, initialAmount: number): void {
+      if (!Number.isFinite(initialAmount)) {
+        throw new Error(`ledger: non-finite initialAmount ${String(initialAmount)}`)
+      }
+      if (initialAmount < 0) {
+        throw new Error(`ledger: negative initialAmount ${String(initialAmount)}`)
+      }
       const k = poolKey(pool)
       if (balances.has(k)) {
         throw new Error(`ledger: pool ${k} already registered`)
@@ -102,10 +114,22 @@ export function makeLedger(opts: LedgerOptions): Ledger {
       balances.set(toKey, toBal + amount)
     },
     assertEnergyConserved(): void {
-      throw new Error('energy.assertEnergyConserved: not implemented')
+      let sum = 0
+      for (const v of balances.values()) {
+        sum += v
+      }
+      if (Math.abs(sum - total) > epsilon) {
+        throw new Error(
+          `ledger: energy conservation violated: expected ${String(total)}, actual ${String(sum)}, drift ${String(sum - total)}`,
+        )
+      }
     },
     assertFinite(): void {
-      throw new Error('energy.assertFinite: not implemented')
+      for (const [k, v] of balances) {
+        if (!Number.isFinite(v)) {
+          throw new Error(`ledger: non-finite value in ${k}: ${String(v)}`)
+        }
+      }
     },
   }
 }
