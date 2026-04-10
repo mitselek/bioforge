@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { wrap, wrapPosition, wrapDelta, torusDistance } from '../src/core/world.js'
+import {
+  wrap,
+  wrapPosition,
+  wrapDelta,
+  torusDistance,
+  torusBearing,
+  normalizeAngle,
+} from '../src/core/world.js'
 
 describe('world.wrap', () => {
   it('wraps positive overflow', () => {
@@ -93,5 +100,76 @@ describe('world.torusDistance', () => {
     const b = { x: 13, y: 14 }
     // Direct distance: sqrt(3^2 + 4^2) = 5
     expect(torusDistance(a, b, 80, 30)).toBeCloseTo(5)
+  })
+})
+
+describe('world.torusBearing', () => {
+  it('returns 0 when b is directly east of a', () => {
+    expect(torusBearing({ x: 10, y: 10 }, { x: 20, y: 10 }, 80, 30)).toBeCloseTo(0)
+  })
+
+  it('returns π/2 when b is directly south', () => {
+    expect(torusBearing({ x: 10, y: 10 }, { x: 10, y: 20 }, 80, 30)).toBeCloseTo(Math.PI / 2)
+  })
+
+  it('returns -π/2 when b is directly north', () => {
+    expect(torusBearing({ x: 10, y: 10 }, { x: 10, y: 5 }, 80, 30)).toBeCloseTo(-Math.PI / 2)
+  })
+
+  it('returns π (or -π) when b is directly west', () => {
+    const bearing = torusBearing({ x: 20, y: 10 }, { x: 10, y: 10 }, 80, 30)
+    expect(Math.abs(Math.abs(bearing) - Math.PI)).toBeLessThan(1e-9)
+  })
+
+  it('uses wrap-aware shortest path (going west via wrap, not east the long way)', () => {
+    // a at x=1, b at x=79: direct east is 78 units; wrap west is 2 units.
+    // Bearing should point west (angle near ±π), not east (angle near 0).
+    const bearing = torusBearing({ x: 1, y: 10 }, { x: 79, y: 10 }, 80, 30)
+    expect(Math.abs(Math.abs(bearing) - Math.PI)).toBeLessThan(1e-9)
+  })
+
+  it('always returns values in [-π, π]', () => {
+    for (let i = 0; i < 200; i++) {
+      const a = { x: (i * 7.31) % 80, y: (i * 3.13) % 30 }
+      const b = { x: (i * 11.17) % 80, y: (i * 5.71) % 30 }
+      const angle = torusBearing(a, b, 80, 30)
+      expect(angle).toBeGreaterThanOrEqual(-Math.PI)
+      expect(angle).toBeLessThanOrEqual(Math.PI)
+    }
+  })
+})
+
+describe('world.normalizeAngle', () => {
+  it('leaves angles in [-π, π] unchanged', () => {
+    expect(normalizeAngle(0)).toBeCloseTo(0)
+    expect(normalizeAngle(Math.PI / 2)).toBeCloseTo(Math.PI / 2)
+    expect(normalizeAngle(-Math.PI / 2)).toBeCloseTo(-Math.PI / 2)
+  })
+
+  it('wraps positive overflow', () => {
+    expect(normalizeAngle(2 * Math.PI + 0.1)).toBeCloseTo(0.1)
+    expect(normalizeAngle(3 * Math.PI)).toBeCloseTo(Math.PI)
+  })
+
+  it('wraps negative underflow', () => {
+    expect(normalizeAngle(-2 * Math.PI - 0.1)).toBeCloseTo(-0.1)
+    expect(normalizeAngle(-3 * Math.PI)).toBeCloseTo(-Math.PI)
+  })
+
+  it('handles extreme inputs without freezing (no while-loop)', () => {
+    // Spec §1.3 forbids while-loop normalization because it freezes for
+    // very large inputs. Verify by timing: 1e20 should normalize in
+    // under 100ms (in practice, in microseconds).
+    const start = Date.now()
+    const v = normalizeAngle(1e20)
+    expect(Date.now() - start).toBeLessThan(100)
+    expect(Number.isFinite(v)).toBe(true)
+    expect(v).toBeGreaterThanOrEqual(-Math.PI)
+    expect(v).toBeLessThanOrEqual(Math.PI)
+  })
+
+  it('is idempotent', () => {
+    const a = normalizeAngle(7.5)
+    expect(normalizeAngle(a)).toBeCloseTo(a)
   })
 })

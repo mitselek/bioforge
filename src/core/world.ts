@@ -26,3 +26,13 @@ export function torusDistance(a: Vec2, b: Vec2, worldW: number, worldH: number):
   const dy = wrapDelta(a.y - b.y, worldH)
   return Math.sqrt(dx * dx + dy * dy)
 }
+
+export function torusBearing(from: Vec2, to: Vec2, worldW: number, worldH: number): number {
+  throw new Error(
+    `world.torusBearing: not implemented (from=${String(from.x)},${String(from.y)} to=${String(to.x)},${String(to.y)} worldW=${String(worldW)} worldH=${String(worldH)})`,
+  )
+}
+
+export function normalizeAngle(a: number): number {
+  throw new Error(`world.normalizeAngle: not implemented (a=${String(a)})`)
+}
