@@ -90,11 +90,17 @@ export function executeOne(entity: Entity, dt: number, ctx: VmContext): void {
       }
       break
     }
-    case 'REPRODUCE':
-      // Cycle 3 — stub: not yet implemented
-      throw new Error(
-        `vm.executeOne: REPRODUCE not implemented (species=${entity.species} energy=${String(entity.energy)})`,
-      )
+    case 'REPRODUCE': {
+      if (entity.species === 'plant') break
+      const eligible =
+        entity.age >= entity.maturityAge &&
+        entity.energy >= entity.stats.reproThresholdEnergy &&
+        ctx.currentTick - entity.lastReproTick >= ctx.cfg.reproCooldownTicks
+      if (eligible) {
+        entity.reproRequested = true
+      }
+      break
+    }
   }
 
   // Advance IP (jumps will override this in Cycle 2)
