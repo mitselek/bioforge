@@ -9,6 +9,7 @@
 
 import { wrap } from './world.js'
 import type { Entity } from './entity.js'
+import type { Ledger } from './energy.js'
 
 export interface SpatialIndex {
   insert(id: number, position: { readonly x: number; readonly y: number }): void
@@ -30,6 +31,23 @@ export function applyMovement(entity: Entity, dt: number, worldW: number, worldH
   const newY = wrap(entity.position.y + entity.velocity.y * dt, worldH)
   entity.position = { x: newX, y: newY }
   entity.velocity = { x: 0, y: 0 }
+}
+
+/**
+ * Deduct the per-tick movement cost from an entity and transfer it to soil via
+ * the ledger. Must be called BEFORE applyMovement so that velocity (and
+ * therefore speed) is still set from the VM step.
+ *
+ * cost = (moveCostLinear * speed + moveCostQuadratic * speed²) * dt
+ *
+ * Story 4.1 AC2. Spec §5.2, §2.3.
+ *
+ * @stub — implementation pending GREEN phase
+ */
+export function applyMovementCost(entity: Entity, dt: number, ledger: Ledger): void {
+  throw new Error(
+    `applyMovementCost not implemented: entity=${String(entity.id)} dt=${String(dt)} ledger=${typeof ledger}`,
+  )
 }
 
 export function makeSpatialIndex(worldW: number, worldH: number, cellSize: number): SpatialIndex {

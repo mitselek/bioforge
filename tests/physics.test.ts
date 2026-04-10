@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { makeSpatialIndex, applyMovement } from '../src/core/physics.js'
+import { makeSpatialIndex, applyMovement, applyMovementCost } from '../src/core/physics.js'
 import { makeEntity, entityId } from '../src/core/entity.js'
 import { defaultConfig } from '../src/core/config.js'
 import { makeRng } from '../src/core/rng.js'
 import { randomGenome } from '../src/core/genome.js'
+import { makeLedger } from '../src/core/energy.js'
 
 describe('spatialIndex', () => {
   const worldW = 80
@@ -186,5 +187,79 @@ describe('applyMovement', () => {
     applyMovement(plant, 1 / 30, cfg.worldW, cfg.worldH)
     expect(plant.position.x).toBe(40)
     expect(plant.position.y).toBe(15)
+  })
+})
+
+// Story 4.1 AC2 — movement energy cost
+// Spec §5.2 (drag model), §2.3 (ledger transfer), §2.1 (conservation)
+describe('applyMovementCost', () => {
+  const cfg = defaultConfig()
+  const herbStats = cfg.species.herbivore
+  // moveCostLinear=0.02, moveCostQuadratic=0.04
+  const dt = 1 / 30
+
+  function makeHerbivoreWithLedger(
+    energy: number,
+    vx: number,
+    vy: number,
+  ): {
+    entity: ReturnType<typeof makeEntity>
+    ledger: ReturnType<typeof makeLedger>
+  } {
+    const rng = makeRng(1)
+    const entity = makeEntity({
+      id: entityId(10),
+      species: 'herbivore',
+      position: { x: 40, y: 15 },
+      orientation: 0,
+      energy,
+      lifespan: 900,
+      maturityAge: 300,
+      genome: randomGenome(rng, cfg),
+      stats: herbStats,
+    })
+    entity.velocity = { x: vx, y: vy }
+    const ledger = makeLedger({ totalEnergy: energy + 1000, initialSoil: 1000 })
+    ledger.register({ kind: 'entity', id: 10 }, energy)
+    return { entity, ledger }
+  }
+
+  it('deducts movement cost from entity energy', () => {
+    // AC1: speed=0.6, cost=(0.02*0.6 + 0.04*0.36)*(1/30) = 0.00088
+    const { entity, ledger } = makeHerbivoreWithLedger(100, 0.6, 0)
+    const speed = Math.sqrt(0.6 * 0.6)
+    const expectedCost =
+      (herbStats.moveCostLinear * speed + herbStats.moveCostQuadratic * speed * speed) * dt
+    applyMovementCost(entity, dt, ledger)
+    expect(entity.energy).toBeCloseTo(100 - expectedCost, 10)
+  })
+
+  it('transfers movement cost to soil via ledger', () => {
+    // AC2: lost energy appears in the soil pool
+    const { entity, ledger } = makeHerbivoreWithLedger(100, 0.6, 0)
+    const soilBefore = ledger.get({ kind: 'soil' })
+    const speed = Math.sqrt(0.6 * 0.6)
+    const expectedCost =
+      (herbStats.moveCostLinear * speed + herbStats.moveCostQuadratic * speed * speed) * dt
+    applyMovementCost(entity, dt, ledger)
+    expect(ledger.get({ kind: 'soil' })).toBeCloseTo(soilBefore + expectedCost, 10)
+  })
+
+  it('zero cost when entity is stationary', () => {
+    // AC3: velocity {x:0, y:0} → speed=0 → cost=0, no ledger transfer
+    const { entity, ledger } = makeHerbivoreWithLedger(100, 0, 0)
+    const energyBefore = entity.energy
+    const soilBefore = ledger.get({ kind: 'soil' })
+    applyMovementCost(entity, dt, ledger)
+    expect(entity.energy).toBe(energyBefore)
+    expect(ledger.get({ kind: 'soil' })).toBe(soilBefore)
+  })
+
+  it('total ledger energy is conserved', () => {
+    // AC4: totalEnergy() is identical before and after
+    const { entity, ledger } = makeHerbivoreWithLedger(100, 0.6, 0)
+    const totalBefore = ledger.totalEnergy()
+    applyMovementCost(entity, dt, ledger)
+    expect(ledger.totalEnergy()).toBeCloseTo(totalBefore, 10)
   })
 })
