@@ -39,7 +39,24 @@ export function checkDeath(
   deadMatter: DeadMatterRegistry,
   cfg: Config,
 ): DeathResult {
-  throw new Error(
-    `checkDeath not implemented: entity=${String(entity.id)} lifespan=${String(entity.lifespan)} age=${String(entity.age)} energy=${String(entity.energy)} ledger=${typeof ledger} deadMatter=${typeof deadMatter} cfg=${typeof cfg}`,
-  )
+  const dies = entity.age >= entity.lifespan || entity.energy <= cfg.energyEpsilon
+  if (!dies) return { died: false, corpse: null }
+
+  if (entity.energy > 0) {
+    const corpse = deadMatter.addCorpse(entity.position, entity.energy)
+    if (corpse !== null) {
+      ledger.register({ kind: 'corpse', id: corpse.id }, 0)
+      ledger.transfer(
+        { kind: 'entity', id: entity.id },
+        { kind: 'corpse', id: corpse.id },
+        entity.energy,
+      )
+    }
+    ledger.unregister({ kind: 'entity', id: entity.id })
+    entity.energy = 0
+    return { died: true, corpse }
+  }
+
+  ledger.unregister({ kind: 'entity', id: entity.id })
+  return { died: true, corpse: null }
 }
