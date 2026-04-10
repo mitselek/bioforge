@@ -4,8 +4,6 @@
  * Each kind has a position, energy, and a branded ID.
  * The registry tracks all instances and provides add/remove/iterate.
  *
- * RED-phase stub — implementation in GREEN.
- *
  * See docs/superpowers/specs/2026-04-10-bioforge-design.md §4.
  */
 
@@ -54,5 +52,62 @@ export interface DeadMatterRegistry {
 }
 
 export function makeDeadMatterRegistry(): DeadMatterRegistry {
-  throw new Error('deadMatter.makeDeadMatterRegistry: not implemented')
+  const corpseMap = new Map<CorpseId, Corpse>()
+  const poopMap = new Map<PoopId, Poop>()
+  const compostMap = new Map<CompostId, Compost>()
+  let nextCorpseId = 1
+  let nextPoopId = 1
+  let nextCompostId = 1
+
+  return {
+    addCorpse(position: Vec2, energy: number): Corpse | null {
+      if (energy <= 0) return null
+      const id = nextCorpseId as CorpseId
+      nextCorpseId++
+      const corpse: Corpse = { id, position, energy }
+      corpseMap.set(id, corpse)
+      return corpse
+    },
+    addPoop(position: Vec2, energy: number): Poop {
+      const id = nextPoopId as PoopId
+      nextPoopId++
+      const poop: Poop = { id, position, energy }
+      poopMap.set(id, poop)
+      return poop
+    },
+    addCompost(position: Vec2, energy: number): Compost {
+      const id = nextCompostId as CompostId
+      nextCompostId++
+      const compost: Compost = { id, position, energy }
+      compostMap.set(id, compost)
+      return compost
+    },
+    removeCorpse(id: CorpseId): void {
+      corpseMap.delete(id)
+    },
+    removePoop(id: PoopId): void {
+      poopMap.delete(id)
+    },
+    removeCompost(id: CompostId): void {
+      compostMap.delete(id)
+    },
+    getCorpse(id: CorpseId): Corpse | undefined {
+      return corpseMap.get(id)
+    },
+    getPoop(id: PoopId): Poop | undefined {
+      return poopMap.get(id)
+    },
+    getCompost(id: CompostId): Compost | undefined {
+      return compostMap.get(id)
+    },
+    corpses(): Iterable<Corpse> {
+      return corpseMap.values()
+    },
+    poop(): Iterable<Poop> {
+      return poopMap.values()
+    },
+    compost(): Iterable<Compost> {
+      return compostMap.values()
+    },
+  }
 }
