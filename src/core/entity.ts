@@ -1,0 +1,89 @@
+/**
+ * Entity type and factory.
+ *
+ * Defines the shared shape that all four species (plant, herbivore,
+ * carnivore, decomposer) use. The species discriminator + per-species
+ * stats from config provide the differentiation.
+ *
+ * RED-phase stub — implementation in GREEN.
+ *
+ * See docs/superpowers/specs/2026-04-10-bioforge-design.md §3, §6.1.
+ */
+
+import type { Vec2 } from './world.js'
+import type { Species, SpeciesStats } from './config.js'
+
+// Branded numeric IDs. The brand prevents accidentally mixing entity ids
+// with corpse/poop/compost ids at the type level.
+declare const EntityIdBrand: unique symbol
+export type EntityId = number & { readonly [EntityIdBrand]: 'EntityId' }
+
+export function entityId(n: number): EntityId {
+  return n as EntityId
+}
+
+// Initial sense result for newly-born entities. The genome VM's
+// JUMP_IF_* instructions read lastSense; this is the safe default
+// before any SENSE_* instruction has run.
+export interface SenseResult {
+  readonly kind: 'food' | 'predator' | 'mate'
+  readonly angle: number
+  readonly distance: number
+  readonly detected: boolean
+  readonly spread: number
+  readonly range: number
+}
+
+export const NO_SENSE: SenseResult = {
+  kind: 'food',
+  angle: 0,
+  distance: 0,
+  detected: false,
+  spread: 0,
+  range: 0,
+}
+
+// Genome type — placeholder until Story 2.3 defines it properly.
+// For Story 2.2, makeEntity accepts an opaque Genome shape so the test
+// file can construct entities. Story 2.3 will replace this with the
+// real Instruction[] tape.
+export interface Genome {
+  readonly tape: readonly unknown[]
+  ip: number
+}
+
+export interface Entity {
+  id: EntityId
+  species: Species
+  position: Vec2
+  velocity: Vec2
+  orientation: number
+  energy: number
+  wasteBuffer: number
+  age: number
+  lifespan: number
+  maturityAge: number
+  lastReproTick: number
+  genome: Genome
+  lastSense: SenseResult
+  stats: SpeciesStats
+}
+
+export interface MakeEntityArgs {
+  readonly id: EntityId
+  readonly species: Species
+  readonly position: Vec2
+  readonly orientation: number
+  readonly energy: number
+  readonly lifespan: number
+  readonly maturityAge: number
+  readonly genome: Genome
+  readonly stats: SpeciesStats
+  readonly age?: number
+}
+
+export function makeEntity(args: MakeEntityArgs): Entity {
+  throw new Error(
+    `entity.makeEntity: not implemented (id=${String(args.id)} species=${args.species})`,
+  )
+}
