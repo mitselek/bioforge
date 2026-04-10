@@ -18,8 +18,6 @@ import type { Ledger } from './energy.js'
  * by 1.
  *
  * Story 4.2 AC1. Spec §5.1, §5.2, §6.2.
- *
- * @stub — implementation pending GREEN phase
  */
 export function applyMetabolism(entity: Entity, dt: number, ledger: Ledger): void {
   const cost = entity.stats.baseMetabolicRate * dt
