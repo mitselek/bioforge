@@ -6,11 +6,13 @@
  * See docs/superpowers/specs/2026-04-10-bioforge-design.md §3.1, §6.3, §2.
  */
 
+import { makeEntity } from './entity.js'
 import type { Entity, EntityId } from './entity.js'
 import type { Ledger } from './energy.js'
 import type { DeadMatterRegistry, Compost } from './deadMatter.js'
 import type { Config } from './config.js'
 import type { Rng } from './rng.js'
+import { randomGenome } from './genome.js'
 
 /**
  * Apply one tick of soil absorption to a plant.
@@ -27,9 +29,13 @@ export function applyPlantAbsorption(
   ledger: Ledger,
   cfg: Config,
 ): void {
-  throw new Error(
-    `applyPlantAbsorption not implemented: plant=${String(plant.id)} nearbyCompostCount=${String(nearbyCompostCount)} dt=${String(dt)} ledger=${typeof ledger} cfg=${typeof cfg}`,
-  )
+  const boostMultiplier = Math.min(1 + cfg.compostBoost * nearbyCompostCount, cfg.compostBoostCap)
+  const desired = plant.stats.absorbRate * dt * boostMultiplier
+  const actual = Math.min(desired, ledger.get({ kind: 'soil' }))
+  if (actual > 0) {
+    ledger.transfer({ kind: 'soil' }, { kind: 'entity', id: plant.id }, actual)
+    plant.energy += actual
+  }
 }
 
 /**
@@ -50,7 +56,35 @@ export function tryCompostSpawn(
   deadMatter: DeadMatterRegistry,
   cfg: Config,
 ): Entity | null {
-  throw new Error(
-    `tryCompostSpawn not implemented: compost=${String(compost.id)} childId=${String(childId)} rng=${typeof rng} ledger=${typeof ledger} deadMatter=${typeof deadMatter} cfg=${typeof cfg}`,
+  void deadMatter
+  if (!cfg.autoSpawnPlants) return null
+  const spawnProb = cfg.plantSpawnBaseProb * 4
+  if (rng.float() >= spawnProb) return null
+
+  const plantStats = cfg.species.plant
+  const initialEnergy = plantStats.initialEnergy
+  ledger.register({ kind: 'entity', id: childId }, 0)
+  const fromCompost = Math.min(compost.energy, initialEnergy)
+  ledger.transfer({ kind: 'compost', id: compost.id }, { kind: 'entity', id: childId }, fromCompost)
+  compost.energy -= fromCompost
+  const topUp = initialEnergy - fromCompost
+  if (topUp > 0) {
+    ledger.transfer({ kind: 'soil' }, { kind: 'entity', id: childId }, topUp)
+  }
+  const lifespan = Math.max(1, rng.gaussian(plantStats.lifespanMean, plantStats.lifespanStddev))
+  const maturityAge = Math.min(
+    Math.max(0, rng.gaussian(plantStats.maturityAgeMean, plantStats.maturityAgeStddev)),
+    lifespan - cfg.minReproWindow - 1,
   )
+  return makeEntity({
+    id: childId,
+    species: 'plant',
+    position: compost.position,
+    orientation: 0,
+    energy: initialEnergy,
+    lifespan,
+    maturityAge,
+    genome: randomGenome(rng, cfg),
+    stats: plantStats,
+  })
 }
