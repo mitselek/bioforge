@@ -179,5 +179,17 @@ export function defaultConfig(): Config {
 }
 
 export function makeConfig(overrides: Partial<Config> = {}): Config {
-  throw new Error(`config.makeConfig: not implemented (keys=${Object.keys(overrides).join(',')})`)
+  const d = defaultConfig()
+  return {
+    ...d,
+    ...overrides,
+    species: {
+      plant: { ...d.species.plant, ...(overrides.species?.plant ?? {}) },
+      herbivore: { ...d.species.herbivore, ...(overrides.species?.herbivore ?? {}) },
+      carnivore: { ...d.species.carnivore, ...(overrides.species?.carnivore ?? {}) },
+      decomposer: { ...d.species.decomposer, ...(overrides.species?.decomposer ?? {}) },
+    },
+    initialCounts: { ...d.initialCounts, ...(overrides.initialCounts ?? {}) },
+    mutationRates: { ...d.mutationRates, ...(overrides.mutationRates ?? {}) },
+  }
 }
