@@ -75,6 +75,11 @@ describe('entity', () => {
       expect(e.reproRequested).toBe(false)
     })
 
+    it('defaults lastMoveDistance to 0', () => {
+      const e = makeEntity(baseArgs)
+      expect(e.lastMoveDistance).toBe(0)
+    })
+
     it('accepts an explicit age override', () => {
       const e = makeEntity({ ...baseArgs, age: 50 })
       expect(e.age).toBe(50)

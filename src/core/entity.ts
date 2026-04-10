@@ -55,6 +55,7 @@ export interface Entity {
   maturityAge: number
   lastReproTick: number
   reproRequested: boolean
+  lastMoveDistance: number
   genome: Genome
   lastSense: SenseResult
   stats: SpeciesStats
@@ -87,6 +88,7 @@ export function makeEntity(args: MakeEntityArgs): Entity {
     maturityAge: args.maturityAge,
     lastReproTick: Number.NEGATIVE_INFINITY,
     reproRequested: false,
+    lastMoveDistance: 0,
     genome: args.genome,
     lastSense: NO_SENSE,
     stats: args.stats,

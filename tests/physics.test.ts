@@ -188,6 +188,54 @@ describe('applyMovement', () => {
     expect(plant.position.x).toBe(40)
     expect(plant.position.y).toBe(15)
   })
+
+  // Story 4.1 AC4.1.2 — lastMoveDistance records actual distance traveled
+  // Spec §9.1: "Each tick records the distance traveled for movement cost calculation"
+  // Spec §3.5: "Movement cost uses actual speed, not maxSpeed"
+
+  it('sets lastMoveDistance to sqrt(vx²+vy²)*dt after movement', () => {
+    // AC4.1.2 AC1: diagonal movement, distance = magnitude(velocity) * dt
+    const vx = 0.9
+    const vy = 1.2
+    const dt = 1 / 30
+    const entity = makeHerbivore(20, 10, vx, vy)
+    applyMovement(entity, dt, cfg.worldW, cfg.worldH)
+    const expected = Math.sqrt(vx * vx + vy * vy) * dt
+    expect(entity.lastMoveDistance).toBeCloseTo(expected, 10)
+  })
+
+  it('sets lastMoveDistance to 0 for a stationary entity', () => {
+    // AC4.1.2 AC2: zero velocity → zero distance
+    const entity = makeHerbivore(20, 10, 0, 0)
+    applyMovement(entity, 1 / 30, cfg.worldW, cfg.worldH)
+    expect(entity.lastMoveDistance).toBe(0)
+  })
+
+  it('captures distance before velocity reset', () => {
+    // AC4.1.2 AC3: lastMoveDistance must reflect the velocity that was set
+    // (not post-reset zero). We check that the recorded distance is non-zero
+    // even though entity.velocity is {0,0} after applyMovement.
+    const vx = 1.5
+    const vy = 0
+    const dt = 1 / 30
+    const entity = makeHerbivore(20, 10, vx, vy)
+    applyMovement(entity, dt, cfg.worldW, cfg.worldH)
+    expect(entity.velocity.x).toBe(0)
+    expect(entity.velocity.y).toBe(0)
+    expect(entity.lastMoveDistance).toBeCloseTo(vx * dt, 10)
+  })
+
+  it('lastMoveDistance is updated on each tick, not accumulated', () => {
+    // AC4.1.2: second tick with different speed records that tick's distance only
+    const dt = 1 / 30
+    const entity = makeHerbivore(20, 10, 1.0, 0)
+    applyMovement(entity, dt, cfg.worldW, cfg.worldH)
+    // First tick distance ~ 1.0 * dt
+    entity.velocity = { x: 0.5, y: 0 }
+    applyMovement(entity, dt, cfg.worldW, cfg.worldH)
+    // Second tick distance ~ 0.5 * dt (not 1.5 * dt)
+    expect(entity.lastMoveDistance).toBeCloseTo(0.5 * dt, 10)
+  })
 })
 
 // Story 4.1 AC2 — movement energy cost
