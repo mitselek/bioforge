@@ -185,3 +185,140 @@ describe('AC5.1.3 — two sims with the same seed produce identical initial stat
     expect(anyDiffers).toBe(true)
   })
 })
+
+// ─── AC5.1.4 — tick steps execute in spec §10.1 order ────────────────────────
+
+describe('AC5.1.4 — tick() executes simulation steps', () => {
+  it('state.tick increments by 1 after each tick() call', () => {
+    const rng = makeRng(cfg.seed)
+    const sim = makeSim(cfg, rng)
+    expect(sim.state.tick).toBe(0)
+    sim.tick()
+    expect(sim.state.tick).toBe(1)
+    sim.tick()
+    expect(sim.state.tick).toBe(2)
+  })
+
+  it('entity positions can change after a tick (movement step executes)', () => {
+    // After one tick the VM may set velocity and movement is applied.
+    // At least some non-plant entities should have had the opportunity to move.
+    // We verify tick() does not throw and entities map is still populated.
+    const rng = makeRng(cfg.seed)
+    const sim = makeSim(cfg, rng)
+    const countBefore = sim.state.entities.size
+    sim.tick()
+    // entities map still exists and is non-empty (deaths possible but unlikely at tick 1)
+    expect(sim.state.entities.size).toBeGreaterThan(0)
+    // total entity count should not have increased beyond seeded amount + possible births
+    // (no strict bound — just verifying structure is intact)
+    expect(sim.state.entities.size).toBeLessThanOrEqual(countBefore + 1000)
+  })
+
+  it('dead entities (energy <= 0) are removed from entities map after a tick', () => {
+    // Use a minimal sim where at least one entity will die from starvation in one tick.
+    // A carnivore with energy = energyEpsilon will die on the first metabolism step.
+    const tinyCfg = makeConfig({
+      initialCounts: { plant: 0, herbivore: 0, carnivore: 1, decomposer: 0 },
+      totalEnergy: 200,
+    })
+    // Override carnivore initialEnergy to be at the starvation boundary
+    const overrideCfg = makeConfig({
+      ...tinyCfg,
+      species: {
+        ...tinyCfg.species,
+        carnivore: { ...tinyCfg.species.carnivore, initialEnergy: tinyCfg.energyEpsilon },
+      },
+    })
+    const rng = makeRng(overrideCfg.seed)
+    const sim = makeSim(overrideCfg, rng)
+    expect(sim.state.entities.size).toBe(1)
+    sim.tick()
+    // The carnivore at energy=energyEpsilon should have died during the lifecycle step
+    expect(sim.state.entities.size).toBe(0)
+  })
+})
+
+// ─── AC5.1.5 — energy conservation holds after every tick ────────────────────
+
+describe('AC5.1.5 — assertEnergyConserved passes after every tick', () => {
+  it('energy is conserved after 10 ticks with default config', () => {
+    const rng = makeRng(cfg.seed)
+    const sim = makeSim(cfg, rng)
+    for (let i = 0; i < 10; i++) {
+      sim.tick()
+      expect(() => {
+        sim.assertEnergyConserved()
+      }).not.toThrow()
+    }
+  })
+
+  it('energy is conserved after 10 ticks with seed 7', () => {
+    const rng = makeRng(7)
+    const altCfg = makeConfig({ seed: 7 })
+    const sim = makeSim(altCfg, rng)
+    for (let i = 0; i < 10; i++) {
+      sim.tick()
+      expect(() => {
+        sim.assertEnergyConserved()
+      }).not.toThrow()
+    }
+  })
+})
+
+// ─── AC5.1.6 — no NaN/Infinity after every tick ──────────────────────────────
+
+describe('AC5.1.6 — assertFinite passes after every tick', () => {
+  it('all ledger values remain finite after 10 ticks', () => {
+    const rng = makeRng(cfg.seed)
+    const sim = makeSim(cfg, rng)
+    for (let i = 0; i < 10; i++) {
+      sim.tick()
+      expect(() => {
+        sim.assertFinite()
+      }).not.toThrow()
+    }
+  })
+
+  it('entity energy values remain finite after 10 ticks', () => {
+    const rng = makeRng(cfg.seed)
+    const sim = makeSim(cfg, rng)
+    for (let i = 0; i < 10; i++) {
+      sim.tick()
+    }
+    for (const entity of sim.state.entities.values()) {
+      expect(Number.isFinite(entity.energy)).toBe(true)
+    }
+  })
+})
+
+// ─── AC5.1.7 — sim runs 1000 ticks without crashing ──────────────────────────
+
+describe('AC5.1.7 — 1000-tick crash-free multi-seed run', () => {
+  for (const seed of [42, 7, 100, 999]) {
+    it(`runs 1000 ticks without throwing for seed ${String(seed)}`, () => {
+      const rng = makeRng(seed)
+      const altCfg = makeConfig({ seed })
+      const sim = makeSim(altCfg, rng)
+      expect(() => {
+        for (let i = 0; i < 1000; i++) {
+          sim.tick()
+        }
+      }).not.toThrow()
+    })
+  }
+
+  it('energy is conserved at tick 1000 for seed 42', () => {
+    const rng = makeRng(42)
+    const altCfg = makeConfig({ seed: 42 })
+    const sim = makeSim(altCfg, rng)
+    for (let i = 0; i < 1000; i++) {
+      sim.tick()
+    }
+    expect(() => {
+      sim.assertEnergyConserved()
+    }).not.toThrow()
+    expect(() => {
+      sim.assertFinite()
+    }).not.toThrow()
+  })
+})

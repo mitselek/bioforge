@@ -28,6 +28,7 @@ export interface SimState {
 export interface Sim {
   tick(): void
   assertEnergyConserved(): void
+  assertFinite(): void
   readonly state: SimState
 }
 
@@ -86,6 +87,9 @@ export function makeSim(cfg: Config, rng: Rng): Sim {
     },
     assertEnergyConserved(): void {
       ledger.assertEnergyConserved()
+    },
+    assertFinite(): void {
+      ledger.assertFinite()
     },
   }
 }
