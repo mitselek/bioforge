@@ -1,8 +1,8 @@
 /**
  * Physics: spatial index, movement integration, collisions.
  *
- * Story 3.2 implements the spatial index only. Movement and collisions
- * come in Story 4.1.
+ * Story 3.2 implements the spatial index. Story 4.1 adds movement
+ * integration, movement cost, and collision resolution.
  *
  * See docs/superpowers/specs/2026-04-10-bioforge-design.md §9.4.
  */
