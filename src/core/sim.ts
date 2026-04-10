@@ -10,12 +10,15 @@
  * See docs/superpowers/specs/2026-04-10-bioforge-design.md §10, §17, §2.
  */
 
-import type { Config } from './config.js'
+import type { Config, Species } from './config.js'
 import type { Rng } from './rng.js'
+import { makeEntity, entityId } from './entity.js'
 import type { Entity } from './entity.js'
+import { makeLedger } from './energy.js'
 import type { Ledger } from './energy.js'
 import type { DeadMatterRegistry } from './deadMatter.js'
 import type { SpatialIndex } from './physics.js'
+import { randomGenome } from './genome.js'
 
 export interface SimState {
   readonly tick: number
@@ -35,7 +38,56 @@ export interface Sim {
  * Story 5.1 AC5.1.1-3. Spec §10, §17, §2.
  */
 export function makeSim(cfg: Config, rng: Rng): Sim {
-  throw new Error(`makeSim not implemented: cfg.seed=${String(cfg.seed)} rng=${typeof rng}`)
+  const entities = new Map<number, Entity>()
+  let totalLiving = 0
+
+  const species: Species[] = ['plant', 'herbivore', 'carnivore', 'decomposer']
+  let nextId = 1
+  for (const sp of species) {
+    const stats = cfg.species[sp]
+    const count = cfg.initialCounts[sp]
+    for (let i = 0; i < count; i++) {
+      const lifespan = Math.max(1, rng.gaussian(stats.lifespanMean, stats.lifespanStddev))
+      const maturityAge = Math.min(
+        Math.max(0, rng.gaussian(stats.maturityAgeMean, stats.maturityAgeStddev)),
+        lifespan - cfg.minReproWindow - 1,
+      )
+      const entity = makeEntity({
+        id: entityId(nextId),
+        species: sp,
+        position: { x: rng.floatInRange(0, cfg.worldW), y: rng.floatInRange(0, cfg.worldH) },
+        orientation: rng.floatInRange(0, 2 * Math.PI),
+        energy: stats.initialEnergy,
+        lifespan,
+        maturityAge,
+        genome: randomGenome(rng, cfg),
+        stats,
+      })
+      entities.set(nextId, entity)
+      totalLiving += stats.initialEnergy
+      nextId++
+    }
+  }
+
+  const soilEnergy = cfg.totalEnergy - totalLiving
+  const ledger = makeLedger({ totalEnergy: cfg.totalEnergy, initialSoil: soilEnergy })
+  for (const entity of entities.values()) {
+    ledger.register({ kind: 'entity', id: entity.id }, entity.energy)
+  }
+
+  const tick = 0
+
+  return {
+    get state(): SimState {
+      return { tick, entities }
+    },
+    tick(): void {
+      throw new Error('tick not implemented')
+    },
+    assertEnergyConserved(): void {
+      ledger.assertEnergyConserved()
+    },
+  }
 }
 
 // Re-export internal types so tests can reference them without reaching into
