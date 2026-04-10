@@ -27,8 +27,10 @@ export interface SpatialIndex {
  * Story 4.1 AC1. Spec §9.1, §9.2, §1.2.
  */
 export function applyMovement(entity: Entity, dt: number, worldW: number, worldH: number): void {
-  const newX = wrap(entity.position.x + entity.velocity.x * dt, worldW)
-  const newY = wrap(entity.position.y + entity.velocity.y * dt, worldH)
+  const { x, y } = entity.velocity
+  entity.lastMoveDistance = Math.sqrt(x * x + y * y) * dt
+  const newX = wrap(entity.position.x + x * dt, worldW)
+  const newY = wrap(entity.position.y + y * dt, worldH)
   entity.position = { x: newX, y: newY }
   entity.velocity = { x: 0, y: 0 }
 }
