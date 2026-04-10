@@ -24,8 +24,6 @@ export interface SpatialIndex {
  * not executed this tick the entity stays still.
  *
  * Story 4.1 AC1. Spec §9.1, §9.2, §1.2.
- *
- * @stub — implementation pending GREEN phase
  */
 export function applyMovement(entity: Entity, dt: number, worldW: number, worldH: number): void {
   const newX = wrap(entity.position.x + entity.velocity.x * dt, worldW)
