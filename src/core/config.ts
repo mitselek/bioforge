@@ -177,3 +177,7 @@ export function defaultConfig(): Config {
     initialCounts: { plant: 250, herbivore: 100, carnivore: 40, decomposer: 50 },
   }
 }
+
+export function makeConfig(overrides: Partial<Config> = {}): Config {
+  throw new Error(`config.makeConfig: not implemented (keys=${Object.keys(overrides).join(',')})`)
+}
