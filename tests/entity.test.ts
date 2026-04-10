@@ -70,6 +70,11 @@ describe('entity', () => {
       expect(e.lastReproTick).toBe(-Infinity)
     })
 
+    it('defaults reproRequested to false', () => {
+      const e = makeEntity(baseArgs)
+      expect(e.reproRequested).toBe(false)
+    })
+
     it('accepts an explicit age override', () => {
       const e = makeEntity({ ...baseArgs, age: 50 })
       expect(e.age).toBe(50)

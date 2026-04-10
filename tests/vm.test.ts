@@ -35,6 +35,7 @@ describe('vm', () => {
     getEntity: () => undefined,
     worldW: 80,
     worldH: 30,
+    currentTick: 1000,
   }
 
   describe('MOVE_FORWARD (AC3.4.1)', () => {
@@ -151,6 +152,7 @@ describe('vm', () => {
           id === 2 ? { species: 'plant', position: { x: 45, y: 15 } } : undefined,
         worldW: 80,
         worldH: 30,
+        currentTick: 1000,
       }
       const entity = makeTestEntity([
         { op: 'SENSE_FOOD', arg1: 1.0, arg2: 1.0 }, // full spread, full range
@@ -171,6 +173,7 @@ describe('vm', () => {
           id === 2 ? { species: 'carnivore', position: { x: 45, y: 15 } } : undefined,
         worldW: 80,
         worldH: 30,
+        currentTick: 1000,
       }
       const entity = makeTestEntity([{ op: 'SENSE_PREDATOR', arg1: 1.0, arg2: 1.0 }])
       executeOne(entity, dt, senseCtx)
@@ -297,6 +300,72 @@ describe('vm', () => {
       executeOne(entity, dt, ctx)
       // Condition "right?" is TRUE -> JUMP_IF_FALSE does NOT jump
       expect(entity.genome.ip).toBe(1)
+    })
+  })
+
+  describe('REPRODUCE (AC3.4.8)', () => {
+    it('sets reproRequested when entity is eligible', () => {
+      const entity = makeTestEntity([{ op: 'REPRODUCE', arg1: 0.5 }], {
+        species: 'herbivore',
+        energy: 200, // above reproThresholdEnergy (150)
+      })
+      entity.age = 500 // above maturityAge (300)
+      entity.lastReproTick = -Infinity // cooldown satisfied
+      executeOne(entity, dt, ctx)
+      expect(entity.reproRequested).toBe(true)
+    })
+
+    it('does NOT set reproRequested when energy below threshold', () => {
+      const entity = makeTestEntity([{ op: 'REPRODUCE', arg1: 0.5 }], {
+        species: 'herbivore',
+        energy: 50, // below reproThresholdEnergy (150)
+      })
+      entity.age = 500
+      entity.lastReproTick = -Infinity
+      executeOne(entity, dt, ctx)
+      expect(entity.reproRequested).toBe(false)
+    })
+
+    it('does NOT set reproRequested when not mature', () => {
+      const entity = makeTestEntity([{ op: 'REPRODUCE', arg1: 0.5 }], {
+        species: 'herbivore',
+        energy: 200,
+      })
+      entity.age = 100 // below maturityAge (300)
+      entity.lastReproTick = -Infinity
+      executeOne(entity, dt, ctx)
+      expect(entity.reproRequested).toBe(false)
+    })
+
+    it('does NOT set reproRequested when cooldown not elapsed', () => {
+      const entity = makeTestEntity([{ op: 'REPRODUCE', arg1: 0.5 }], {
+        species: 'herbivore',
+        energy: 200,
+      })
+      entity.age = 500
+      entity.lastReproTick = 999 // reproduced 1 tick ago
+      const recentCtx = { ...ctx, currentTick: 1000 }
+      executeOne(entity, dt, recentCtx)
+      expect(entity.reproRequested).toBe(false) // cooldown not elapsed (200 ticks required)
+    })
+  })
+
+  describe('plant no-ops for REPRODUCE (AC3.4.10)', () => {
+    it('REPRODUCE is a no-op for plants', () => {
+      const entity = makeTestEntity([{ op: 'REPRODUCE', arg1: 0.5 }], {
+        species: 'plant',
+      })
+      entity.age = 9999
+      executeOne(entity, dt, ctx)
+      expect(entity.reproRequested).toBe(false)
+    })
+
+    it('TURN_LEFT is a no-op for plants', () => {
+      const entity = makeTestEntity([{ op: 'TURN_LEFT', arg1: 1.0 }], {
+        species: 'plant',
+      })
+      executeOne(entity, dt, ctx)
+      expect(entity.orientation).toBe(0) // unchanged
     })
   })
 })

@@ -19,6 +19,7 @@ export interface VmContext {
   ) => { species: Species; position: { readonly x: number; readonly y: number } } | undefined
   readonly worldW: number
   readonly worldH: number
+  readonly currentTick: number
 }
 
 export function executeOne(entity: Entity, dt: number, ctx: VmContext): void {
@@ -90,8 +91,10 @@ export function executeOne(entity: Entity, dt: number, ctx: VmContext): void {
       break
     }
     case 'REPRODUCE':
-      // Cycle 3
-      break
+      // Cycle 3 — stub: not yet implemented
+      throw new Error(
+        `vm.executeOne: REPRODUCE not implemented (species=${entity.species} energy=${String(entity.energy)})`,
+      )
   }
 
   // Advance IP (jumps will override this in Cycle 2)
