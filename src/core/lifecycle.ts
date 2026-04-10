@@ -1,7 +1,7 @@
 /**
  * Lifecycle: death conditions, corpse creation, reproduction.
  *
- * Story 4.3 implements checkDeath. Reproduction comes in a later story.
+ * Story 4.3 implements checkDeath and processReproduction.
  *
  * See docs/superpowers/specs/2026-04-10-bioforge-design.md §5.3, §4.1, §6.3, §6.4.
  */
@@ -72,8 +72,6 @@ export function checkDeath(
  * Returns the new child Entity, or null if `reproRequested` was false.
  *
  * Story 4.3 AC2. Spec §6.1, §6.2, §6.3, §8, §2.
- *
- * @stub — implementation pending GREEN phase
  */
 export function processReproduction(
   entity: Entity,
