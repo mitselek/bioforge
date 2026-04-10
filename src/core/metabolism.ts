@@ -37,9 +37,25 @@ export function checkWasteDrop(
   deadMatter: DeadMatterRegistry,
   cfg: Config,
 ): Poop | Compost | null {
-  throw new Error(
-    `checkWasteDrop not implemented: entity=${String(entity.id)} ledger=${typeof ledger} deadMatter=${typeof deadMatter} cfg=${typeof cfg}`,
-  )
+  if (entity.wasteBuffer < cfg.poopThreshold) return null
+
+  const amount = entity.wasteBuffer
+
+  if (entity.species === 'decomposer') {
+    const compost = deadMatter.addCompost(entity.position, amount)
+    ledger.register({ kind: 'compost', id: compost.id }, 0)
+    ledger.transfer({ kind: 'entity', id: entity.id }, { kind: 'compost', id: compost.id }, amount)
+    entity.energy -= amount
+    entity.wasteBuffer = 0
+    return compost
+  }
+
+  const poop = deadMatter.addPoop(entity.position, amount)
+  ledger.register({ kind: 'poop', id: poop.id }, 0)
+  ledger.transfer({ kind: 'entity', id: entity.id }, { kind: 'poop', id: poop.id }, amount)
+  entity.energy -= amount
+  entity.wasteBuffer = 0
+  return poop
 }
 
 export function applyMetabolism(entity: Entity, dt: number, ledger: Ledger): void {
