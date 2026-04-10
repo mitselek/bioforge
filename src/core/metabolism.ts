@@ -15,8 +15,9 @@ import type { Config } from './config.js'
  * Check if entity's wasteBuffer has reached the drop threshold and, if so,
  * deposit it as poop (non-decomposers) or compost (decomposers).
  *
- * Energy flows from the entity pool to the new dead matter pool via the ledger.
- * WasteBuffer is reset to 0 after dropping.
+ * Energy flows from the entity pool to the new dead matter pool via the ledger,
+ * clamped to the entity's available ledger balance. WasteBuffer is decremented
+ * by the dropped amount (partial drop if clamped).
  *
  * Returns the created Poop or Compost, or null if threshold not met.
  *
