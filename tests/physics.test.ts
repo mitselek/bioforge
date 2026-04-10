@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { makeSpatialIndex } from '../src/core/physics.js'
+import { makeSpatialIndex, applyMovement } from '../src/core/physics.js'
+import { makeEntity, entityId } from '../src/core/entity.js'
+import { defaultConfig } from '../src/core/config.js'
+import { makeRng } from '../src/core/rng.js'
+import { randomGenome } from '../src/core/genome.js'
 
 describe('spatialIndex', () => {
   const worldW = 80
@@ -105,5 +109,82 @@ describe('spatialIndex', () => {
       }
       expect(Date.now() - start).toBeLessThan(100)
     })
+  })
+})
+
+// Story 4.1 AC1 — movement integration
+// Spec §9.1 (position update), §9.2 (velocity reset after tick), §1 (torus wrap)
+describe('applyMovement', () => {
+  const cfg = defaultConfig()
+  const rng = makeRng(1)
+
+  function makeHerbivore(
+    px: number,
+    py: number,
+    vx: number,
+    vy: number,
+  ): ReturnType<typeof makeEntity> {
+    const stats = cfg.species.herbivore
+    const entity = makeEntity({
+      id: entityId(1),
+      species: 'herbivore',
+      position: { x: px, y: py },
+      orientation: 0,
+      energy: 100,
+      lifespan: 900,
+      maturityAge: 300,
+      genome: randomGenome(rng, cfg),
+      stats,
+    })
+    entity.velocity = { x: vx, y: vy }
+    return entity
+  }
+
+  it('moves entity east by velocity * dt', () => {
+    // AC1: velocity {x:1.2, y:0}, dt=1/30 → x advances by 1.2/30 ≈ 0.04
+    const entity = makeHerbivore(10, 15, 1.2, 0)
+    const dt = 1 / 30
+    applyMovement(entity, dt, cfg.worldW, cfg.worldH)
+    expect(entity.position.x).toBeCloseTo(10 + 1.2 * dt, 10)
+    expect(entity.position.y).toBeCloseTo(15, 10)
+  })
+
+  it('wraps position via torus when entity crosses east edge', () => {
+    // AC2: entity at x=79.9, velocity {x:1.2, y:0}, dt=1/30 → wraps near x=0
+    const entity = makeHerbivore(79.9, 15, 1.2, 0)
+    const dt = 1 / 30
+    applyMovement(entity, dt, cfg.worldW, cfg.worldH)
+    // Expected: (79.9 + 1.2/30) % 80 ≈ 79.94 - 80 → near 0
+    const expected = (((79.9 + 1.2 * dt) % cfg.worldW) + cfg.worldW) % cfg.worldW
+    expect(entity.position.x).toBeCloseTo(expected, 10)
+    expect(entity.position.x).toBeLessThan(1) // definitely wrapped
+  })
+
+  it('resets velocity to zero after movement', () => {
+    // AC3: velocity is per-tick intent; must be zero after applyMovement
+    const entity = makeHerbivore(10, 15, 0.5, 0.3)
+    applyMovement(entity, 1 / 30, cfg.worldW, cfg.worldH)
+    expect(entity.velocity.x).toBe(0)
+    expect(entity.velocity.y).toBe(0)
+  })
+
+  it('does not move a plant with zero velocity', () => {
+    // AC4: plants have maxSpeed=0; applyMovement with zero velocity is a no-op
+    const stats = cfg.species.plant
+    const plant = makeEntity({
+      id: entityId(2),
+      species: 'plant',
+      position: { x: 40, y: 15 },
+      orientation: 0,
+      energy: 50,
+      lifespan: 1200,
+      maturityAge: 400,
+      genome: randomGenome(rng, cfg),
+      stats,
+    })
+    // plant velocity stays at the default {x:0, y:0}
+    applyMovement(plant, 1 / 30, cfg.worldW, cfg.worldH)
+    expect(plant.position.x).toBe(40)
+    expect(plant.position.y).toBe(15)
   })
 })

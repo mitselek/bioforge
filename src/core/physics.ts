@@ -8,11 +8,29 @@
  */
 
 import { wrap } from './world.js'
+import type { Entity } from './entity.js'
 
 export interface SpatialIndex {
   insert(id: number, position: { readonly x: number; readonly y: number }): void
   clear(): void
   queryRadius(center: { readonly x: number; readonly y: number }, radius: number): Iterable<number>
+}
+
+/**
+ * Apply one tick of movement to an entity.
+ *
+ * Integrates velocity into position (torus-wrapped), then resets velocity to
+ * zero. Velocity is per-tick intent set by the genome VM; if MOVE_FORWARD was
+ * not executed this tick the entity stays still.
+ *
+ * Story 4.1 AC1. Spec §9.1, §9.2, §1.2.
+ *
+ * @stub — implementation pending GREEN phase
+ */
+export function applyMovement(entity: Entity, dt: number, worldW: number, worldH: number): void {
+  throw new Error(
+    `applyMovement not implemented: entity=${String(entity.id)} dt=${String(dt)} worldW=${String(worldW)} worldH=${String(worldH)}`,
+  )
 }
 
 export function makeSpatialIndex(worldW: number, worldH: number, cellSize: number): SpatialIndex {
