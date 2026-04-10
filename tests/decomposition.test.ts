@@ -55,7 +55,7 @@ describe('applyDecomposerEating', () => {
       // eatRate=1.67, dt=1/30 → eaten=1.67/30≈0.05567; corpse=100 → full eatRate applies
       const { decomposer, corpse, ledger } = makeCorpseWithLedger(100)
       const expectedEaten = cfg.species.decomposer.eatRate * dt
-      applyDecomposerEating(decomposer, corpse, dt, ledger, cfg)
+      applyDecomposerEating(decomposer, corpse, { kind: 'corpse', id: corpse.id }, dt, ledger, cfg)
       expect(corpse.energy).toBeCloseTo(100 - expectedEaten, 8)
     })
 
@@ -63,14 +63,14 @@ describe('applyDecomposerEating', () => {
       const { decomposer, corpse, ledger } = makeCorpseWithLedger(100)
       const expectedEaten = cfg.species.decomposer.eatRate * dt
       const energyBefore = decomposer.energy
-      applyDecomposerEating(decomposer, corpse, dt, ledger, cfg)
+      applyDecomposerEating(decomposer, corpse, { kind: 'corpse', id: corpse.id }, dt, ledger, cfg)
       expect(decomposer.energy).toBeCloseTo(energyBefore + expectedEaten, 8)
     })
 
     it('eaten is clamped to remaining corpse energy', () => {
       // corpse has only 0.01 energy, eatRate*dt≈0.0557 → eaten=0.01
       const { decomposer, corpse, ledger } = makeCorpseWithLedger(0.01)
-      applyDecomposerEating(decomposer, corpse, dt, ledger, cfg)
+      applyDecomposerEating(decomposer, corpse, { kind: 'corpse', id: corpse.id }, dt, ledger, cfg)
       expect(corpse.energy).toBeCloseTo(0, 10)
       expect(decomposer.energy).toBeCloseTo(100 + 0.01, 8)
     })
@@ -80,14 +80,14 @@ describe('applyDecomposerEating', () => {
       const { decomposer, corpse, ledger } = makeCorpseWithLedger(100)
       const expectedEaten = cfg.species.decomposer.eatRate * dt
       const expectedWaste = expectedEaten * (1 - cfg.species.decomposer.efficiency)
-      applyDecomposerEating(decomposer, corpse, dt, ledger, cfg)
+      applyDecomposerEating(decomposer, corpse, { kind: 'corpse', id: corpse.id }, dt, ledger, cfg)
       expect(decomposer.wasteBuffer).toBeCloseTo(expectedWaste, 8)
     })
 
     it('energy is transferred via ledger: entity pool increases, corpse pool decreases', () => {
       const { decomposer, corpse, ledger } = makeCorpseWithLedger(100)
       const expectedEaten = cfg.species.decomposer.eatRate * dt
-      applyDecomposerEating(decomposer, corpse, dt, ledger, cfg)
+      applyDecomposerEating(decomposer, corpse, { kind: 'corpse', id: corpse.id }, dt, ledger, cfg)
       expect(ledger.get({ kind: 'entity', id: 10 })).toBeCloseTo(100 + expectedEaten, 8)
       expect(ledger.get({ kind: 'corpse', id: corpse.id })).toBeCloseTo(100 - expectedEaten, 8)
     })
@@ -95,7 +95,7 @@ describe('applyDecomposerEating', () => {
     it('total ledger energy is conserved', () => {
       const { decomposer, corpse, ledger } = makeCorpseWithLedger(100)
       const totalBefore = ledger.totalEnergy()
-      applyDecomposerEating(decomposer, corpse, dt, ledger, cfg)
+      applyDecomposerEating(decomposer, corpse, { kind: 'corpse', id: corpse.id }, dt, ledger, cfg)
       expect(ledger.totalEnergy()).toBeCloseTo(totalBefore, 8)
     })
   })
@@ -120,7 +120,7 @@ describe('applyDecomposerEating', () => {
       ledger.register({ kind: 'entity', id: 10 }, 100)
       ledger.register({ kind: 'poop', id: poop.id }, 50)
       const expectedEaten = cfg.species.decomposer.eatRate * dt
-      applyDecomposerEating(decomposer, poop, dt, ledger, cfg)
+      applyDecomposerEating(decomposer, poop, { kind: 'poop', id: poop.id }, dt, ledger, cfg)
       expect(poop.energy).toBeCloseTo(50 - expectedEaten, 8)
       expect(decomposer.energy).toBeCloseTo(100 + expectedEaten, 8)
     })
@@ -167,9 +167,9 @@ describe('applyDecomposerEating', () => {
         stats: cfg.species.decomposer,
       })
 
-      applyDecomposerEating(decomposer1, corpse, dt, ledger, cfg)
+      applyDecomposerEating(decomposer1, corpse, { kind: 'corpse', id: corpse.id }, dt, ledger, cfg)
       const afterFirst = corpse.energy
-      applyDecomposerEating(decomposer2, corpse, dt, ledger, cfg)
+      applyDecomposerEating(decomposer2, corpse, { kind: 'corpse', id: corpse.id }, dt, ledger, cfg)
 
       // first took min(0.0557, 0.08)=0.0557 → corpse≈0.0243
       expect(afterFirst).toBeCloseTo(corpseE - cfg.species.decomposer.eatRate * dt, 8)
