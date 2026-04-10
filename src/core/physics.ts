@@ -54,6 +54,27 @@ export function applyMovementCost(entity: Entity, dt: number, ledger: Ledger): v
   entity.energy -= cost
 }
 
+/**
+ * Resolve collisions between overlapping entity pairs.
+ *
+ * For each pair where torus-distance < r1 + r2, push them apart along the
+ * connecting vector by (r1+r2-distance)/2 each. Plants absorb zero push —
+ * the other entity takes the full displacement. Positions are torus-wrapped
+ * after the push.
+ *
+ * Story 4.1 AC4.1.3-6. Spec §9.3, §1.
+ */
+export function resolveCollisions(
+  entities: Map<number, Entity>,
+  spatialIndex: SpatialIndex,
+  worldW: number,
+  worldH: number,
+): void {
+  throw new Error(
+    `resolveCollisions not implemented: entities=${String(entities.size)} worldW=${String(worldW)} worldH=${String(worldH)} spatialIndex=${typeof spatialIndex}`,
+  )
+}
+
 export function makeSpatialIndex(worldW: number, worldH: number, cellSize: number): SpatialIndex {
   const cols = Math.ceil(worldW / cellSize)
   const rows = Math.ceil(worldH / cellSize)

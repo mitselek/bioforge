@@ -1,10 +1,16 @@
 import { describe, it, expect } from 'vitest'
-import { makeSpatialIndex, applyMovement, applyMovementCost } from '../src/core/physics.js'
+import {
+  makeSpatialIndex,
+  applyMovement,
+  applyMovementCost,
+  resolveCollisions,
+} from '../src/core/physics.js'
 import { makeEntity, entityId } from '../src/core/entity.js'
 import { defaultConfig } from '../src/core/config.js'
 import { makeRng } from '../src/core/rng.js'
 import { randomGenome } from '../src/core/genome.js'
 import { makeLedger } from '../src/core/energy.js'
+import { torusDistance } from '../src/core/world.js'
 
 describe('spatialIndex', () => {
   const worldW = 80
@@ -309,5 +315,154 @@ describe('applyMovementCost', () => {
     const totalBefore = ledger.totalEnergy()
     applyMovementCost(entity, dt, ledger)
     expect(ledger.totalEnergy()).toBeCloseTo(totalBefore, 10)
+  })
+})
+
+// Story 4.1 AC4.1.3-6 — collision resolution
+// Spec §9.3: push overlapping pairs apart by half overlap each; plants absorb zero push
+// Spec §1: torus-aware distance and position wrapping
+describe('resolveCollisions', () => {
+  // defaultConfig radii: plant=0.4, herbivore=0.5, carnivore=0.7, decomposer=0.4
+  const cfg = defaultConfig()
+  const worldW = cfg.worldW // 80
+  const worldH = cfg.worldH // 30
+
+  function makeEntityAt(
+    id: number,
+    species: 'herbivore' | 'carnivore' | 'plant' | 'decomposer',
+    x: number,
+    y: number,
+  ): ReturnType<typeof makeEntity> {
+    const rng = makeRng(1)
+    return makeEntity({
+      id: entityId(id),
+      species,
+      position: { x, y },
+      orientation: 0,
+      energy: 100,
+      lifespan: 900,
+      maturityAge: 300,
+      genome: randomGenome(rng, cfg),
+      stats: cfg.species[species],
+    })
+  }
+
+  function makeIndexWith(entities: ReturnType<typeof makeEntity>[]): SpatialIndexType {
+    const idx = makeSpatialIndex(worldW, worldH, 2)
+    for (const e of entities) {
+      idx.insert(e.id, e.position)
+    }
+    return idx
+  }
+
+  // Helper type alias so we can name it
+  type SpatialIndexType = ReturnType<typeof makeSpatialIndex>
+
+  describe('AC4.1.3 — overlapping pair pushed to sum-of-radii distance', () => {
+    it('two herbivores 0.8 apart (sumRadii=1.0) are pushed to distance=1.0', () => {
+      // herbivore radius=0.5 each; sumRadii=1.0; initial dist=0.8 < 1.0
+      // overlap=0.2, push each = 0.1 along x-axis
+      const herbA = makeEntityAt(1, 'herbivore', 10, 10)
+      const herbB = makeEntityAt(2, 'herbivore', 10.8, 10)
+      const entities = new Map([
+        [1, herbA],
+        [2, herbB],
+      ])
+      const idx = makeIndexWith([herbA, herbB])
+      resolveCollisions(entities, idx, worldW, worldH)
+      const dist = torusDistance(herbA.position, herbB.position, worldW, worldH)
+      expect(dist).toBeCloseTo(1.0, 8)
+    })
+
+    it('herbivore and carnivore 0.8 apart (sumRadii=1.2) are pushed to distance=1.2', () => {
+      // herbivore r=0.5, carnivore r=0.7; sumRadii=1.2; initial dist=0.8 < 1.2
+      const herb = makeEntityAt(1, 'herbivore', 10, 10)
+      const carn = makeEntityAt(2, 'carnivore', 10.8, 10)
+      const entities = new Map([
+        [1, herb],
+        [2, carn],
+      ])
+      const idx = makeIndexWith([herb, carn])
+      resolveCollisions(entities, idx, worldW, worldH)
+      const dist = torusDistance(herb.position, carn.position, worldW, worldH)
+      expect(dist).toBeCloseTo(1.2, 8)
+    })
+  })
+
+  describe('AC4.1.4 — center of mass conserved for two mobile entities', () => {
+    it('midpoint is unchanged after resolving two herbivores', () => {
+      // midpoint x = (10 + 10.8) / 2 = 10.4; y = 10
+      const herbA = makeEntityAt(1, 'herbivore', 10, 10)
+      const herbB = makeEntityAt(2, 'herbivore', 10.8, 10)
+      const midXBefore = (herbA.position.x + herbB.position.x) / 2
+      const midYBefore = (herbA.position.y + herbB.position.y) / 2
+      const entities = new Map([
+        [1, herbA],
+        [2, herbB],
+      ])
+      const idx = makeIndexWith([herbA, herbB])
+      resolveCollisions(entities, idx, worldW, worldH)
+      const midXAfter = (herbA.position.x + herbB.position.x) / 2
+      const midYAfter = (herbA.position.y + herbB.position.y) / 2
+      expect(midXAfter).toBeCloseTo(midXBefore, 8)
+      expect(midYAfter).toBeCloseTo(midYBefore, 8)
+    })
+  })
+
+  describe('AC4.1.5 — plant absorbs zero push, mobile takes full displacement', () => {
+    it('plant position unchanged, herbivore pushed full overlap distance', () => {
+      // plant r=0.4, herbivore r=0.5; sumRadii=0.9; initial dist=0.6 < 0.9
+      // overlap=0.3; plant stays, herbivore pushed 0.3 away
+      const plant = makeEntityAt(1, 'plant', 20, 20)
+      const herb = makeEntityAt(2, 'herbivore', 20.6, 20)
+      const plantPosBefore = { ...plant.position }
+      const entities = new Map([
+        [1, plant],
+        [2, herb],
+      ])
+      const idx = makeIndexWith([plant, herb])
+      resolveCollisions(entities, idx, worldW, worldH)
+      // plant must not move
+      expect(plant.position.x).toBeCloseTo(plantPosBefore.x, 8)
+      expect(plant.position.y).toBeCloseTo(plantPosBefore.y, 8)
+      // distance after must be >= sumRadii
+      const dist = torusDistance(plant.position, herb.position, worldW, worldH)
+      expect(dist).toBeCloseTo(0.9, 8)
+    })
+  })
+
+  describe('AC4.1.6 — torus-aware collision across world edge', () => {
+    it('two herbivores near opposite x edges are pushed apart correctly', () => {
+      // herbA at x=0.3, herbB at x=79.8, worldW=80
+      // wrapDelta(0.3 - 79.8, 80) = 0.5 → torus distance = 0.5 < sumRadii=1.0
+      const herbA = makeEntityAt(1, 'herbivore', 0.3, 15)
+      const herbB = makeEntityAt(2, 'herbivore', 79.8, 15)
+      const entities = new Map([
+        [1, herbA],
+        [2, herbB],
+      ])
+      const idx = makeIndexWith([herbA, herbB])
+      resolveCollisions(entities, idx, worldW, worldH)
+      const dist = torusDistance(herbA.position, herbB.position, worldW, worldH)
+      expect(dist).toBeCloseTo(1.0, 8)
+    })
+  })
+
+  describe('non-overlapping pair — no change', () => {
+    it('entities already separated are not moved', () => {
+      // distance=5.0 >> sumRadii=1.0; no collision
+      const herbA = makeEntityAt(1, 'herbivore', 10, 10)
+      const herbB = makeEntityAt(2, 'herbivore', 15, 10)
+      const posABefore = { ...herbA.position }
+      const posBBefore = { ...herbB.position }
+      const entities = new Map([
+        [1, herbA],
+        [2, herbB],
+      ])
+      const idx = makeIndexWith([herbA, herbB])
+      resolveCollisions(entities, idx, worldW, worldH)
+      expect(herbA.position.x).toBeCloseTo(posABefore.x, 8)
+      expect(herbB.position.x).toBeCloseTo(posBBefore.x, 8)
+    })
   })
 })
