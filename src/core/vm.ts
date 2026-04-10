@@ -9,6 +9,7 @@ import type { Config } from './config.js'
 import type { SpatialIndex } from './physics.js'
 import type { Species } from './config.js'
 import { normalizeAngle } from './world.js'
+import { sense } from './sensing.js'
 
 export interface VmContext {
   readonly cfg: Config
@@ -51,17 +52,43 @@ export function executeOne(entity: Entity, dt: number, ctx: VmContext): void {
     }
     case 'SENSE_FOOD':
     case 'SENSE_PREDATOR':
-    case 'SENSE_MATE':
-      // Cycle 2 — stub: not yet implemented
-      throw new Error(
-        `vm.executeOne: SENSE not implemented (op=${inst.op} species=${entity.species})`,
-      )
+    case 'SENSE_MATE': {
+      const senseKind =
+        inst.op === 'SENSE_FOOD' ? 'food' : inst.op === 'SENSE_PREDATOR' ? 'predator' : 'mate'
+      entity.lastSense = sense({
+        kind: senseKind,
+        querierPosition: entity.position,
+        querierOrientation: entity.orientation,
+        querierSpecies: entity.species,
+        spread: inst.arg1 * 2 * Math.PI,
+        range: inst.arg2 * entity.stats.maxSenseRange,
+        index: ctx.index,
+        getEntity: ctx.getEntity,
+        worldW: ctx.worldW,
+        worldH: ctx.worldH,
+      })
+      break
+    }
     case 'JUMP_IF_TRUE':
-    case 'JUMP_IF_FALSE':
-      // Cycle 2 — stub: not yet implemented
-      throw new Error(
-        `vm.executeOne: JUMP not implemented (op=${inst.op} arg1=${String(inst.arg1)})`,
-      )
+    case 'JUMP_IF_FALSE': {
+      const { lastSense } = entity
+      let condition: boolean
+      if (inst.arg1 < 0.25) {
+        condition = lastSense.detected
+      } else if (inst.arg1 < 0.5) {
+        condition = !lastSense.detected
+      } else if (inst.arg1 < 0.75) {
+        condition = lastSense.detected && lastSense.angle < 0
+      } else {
+        condition = lastSense.detected && lastSense.angle > 0
+      }
+      const shouldJump = inst.op === 'JUMP_IF_TRUE' ? condition : !condition
+      if (shouldJump) {
+        genome.ip = inst.target % genome.tape.length
+        return // skip normal IP advancement
+      }
+      break
+    }
     case 'REPRODUCE':
       // Cycle 3
       break
