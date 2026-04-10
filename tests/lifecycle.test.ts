@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { checkDeath } from '../src/core/lifecycle.js'
+import { checkDeath, processReproduction } from '../src/core/lifecycle.js'
 import { makeEntity, entityId } from '../src/core/entity.js'
 import { defaultConfig, makeConfig } from '../src/core/config.js'
 import { makeLedger } from '../src/core/energy.js'
@@ -155,6 +155,167 @@ describe('checkDeath', () => {
       const dm = makeDeadMatterRegistry()
       checkDeath(entity, ledger, dm, cfg2)
       expect([...dm.corpses()]).toHaveLength(0)
+    })
+  })
+})
+
+// Story 4.3 AC2 — reproduction
+// Spec §6.1 (energy split), §6.2 (genome mutation), §6.3 (stats mutation), §8, §2 (conservation)
+
+const CHILD_ID = entityId(99)
+const CURRENT_TICK = 500
+
+function makeReproducingParent(energy: number): {
+  entity: ReturnType<typeof makeEntity>
+  ledger: ReturnType<typeof makeLedger>
+} {
+  const rng = makeRng(1)
+  const stats = cfg.species.herbivore
+  const entity = makeEntity({
+    id: entityId(1),
+    species: 'herbivore',
+    position: { x: 30, y: 12 },
+    orientation: 0,
+    energy,
+    lifespan: 900,
+    maturityAge: 300,
+    genome: randomGenome(rng, cfg),
+    stats,
+  })
+  entity.age = 350 // mature
+  entity.reproRequested = true
+  const ledger = makeLedger({ totalEnergy: energy + 1000, initialSoil: 1000 })
+  ledger.register({ kind: 'entity', id: 1 }, energy)
+  return { entity, ledger }
+}
+
+describe('processReproduction', () => {
+  describe('no-op when not requested', () => {
+    it('returns null when reproRequested is false', () => {
+      // AC10: no child if flag not set
+      const { entity, ledger } = makeReproducingParent(200)
+      entity.reproRequested = false
+      const rng = makeRng(7)
+      const result = processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      expect(result).toBeNull()
+    })
+
+    it('does not alter parent state when not requested', () => {
+      // AC10: energy, lastReproTick unchanged
+      const { entity, ledger } = makeReproducingParent(200)
+      entity.reproRequested = false
+      const energyBefore = entity.energy
+      const reproTickBefore = entity.lastReproTick
+      const rng = makeRng(7)
+      processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      expect(entity.energy).toBe(energyBefore)
+      expect(entity.lastReproTick).toBe(reproTickBefore)
+    })
+  })
+
+  describe('child creation', () => {
+    it('returns a child entity when reproRequested is true', () => {
+      // AC1: a child is produced
+      const { entity, ledger } = makeReproducingParent(200)
+      const rng = makeRng(7)
+      const child = processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      expect(child).not.toBeNull()
+    })
+
+    it('child starts with age=0 and reproRequested=false', () => {
+      // AC7: child initial state
+      const { entity, ledger } = makeReproducingParent(200)
+      const rng = makeRng(7)
+      const child = processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      expect(child?.age).toBe(0)
+      expect(child?.reproRequested).toBe(false)
+    })
+
+    it('child position matches parent position', () => {
+      // AC6: child spawns at parent location
+      const { entity, ledger } = makeReproducingParent(200)
+      const rng = makeRng(7)
+      const child = processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      expect(child?.position).toEqual({ x: 30, y: 12 })
+    })
+
+    it('child has the assigned id', () => {
+      // AC1: child uses the provided childId
+      const { entity, ledger } = makeReproducingParent(200)
+      const rng = makeRng(7)
+      const child = processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      expect(child?.id).toBe(CHILD_ID)
+    })
+  })
+
+  describe('energy split', () => {
+    it('child receives parent.energy * reproCostFraction', () => {
+      // AC2: herbivore reproCostFraction=0.5, parent energy=200 → child gets 100
+      const { entity, ledger } = makeReproducingParent(200)
+      const rng = makeRng(7)
+      const child = processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      const expectedChildEnergy = 200 * cfg.species.herbivore.reproCostFraction
+      expect(child?.energy).toBeCloseTo(expectedChildEnergy, 10)
+    })
+
+    it('parent retains energy after giving reproCostFraction to child', () => {
+      // AC3: parent keeps (1 - reproCostFraction) fraction
+      const { entity, ledger } = makeReproducingParent(200)
+      const rng = makeRng(7)
+      processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      const expectedParentEnergy = 200 * (1 - cfg.species.herbivore.reproCostFraction)
+      expect(entity.energy).toBeCloseTo(expectedParentEnergy, 10)
+    })
+
+    it('ledger entity pool reflects parent energy after split', () => {
+      // AC3 via ledger: ledger tracks parent's reduced balance
+      const { entity, ledger } = makeReproducingParent(200)
+      const rng = makeRng(7)
+      processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      expect(ledger.get({ kind: 'entity', id: 1 })).toBeCloseTo(
+        200 * (1 - cfg.species.herbivore.reproCostFraction),
+        10,
+      )
+    })
+  })
+
+  describe('parent state after reproduction', () => {
+    it('resets reproRequested to false', () => {
+      // AC8: flag cleared so VM must set it again next tick
+      const { entity, ledger } = makeReproducingParent(200)
+      const rng = makeRng(7)
+      processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      expect(entity.reproRequested).toBe(false)
+    })
+
+    it('sets lastReproTick to currentTick', () => {
+      // AC8: cooldown anchor updated
+      const { entity, ledger } = makeReproducingParent(200)
+      const rng = makeRng(7)
+      processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      expect(entity.lastReproTick).toBe(CURRENT_TICK)
+    })
+  })
+
+  describe('energy conservation', () => {
+    it('totalEnergy is unchanged after reproduction', () => {
+      // AC9: energy split is internal, no energy created or destroyed
+      const { entity, ledger } = makeReproducingParent(200)
+      const rng = makeRng(7)
+      const totalBefore = ledger.totalEnergy()
+      processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      expect(ledger.totalEnergy()).toBeCloseTo(totalBefore, 10)
+    })
+  })
+
+  describe('determinism', () => {
+    it('produces identical child genome for the same rng seed', () => {
+      // AC11: same seed → same tape
+      const { entity: e1, ledger: l1 } = makeReproducingParent(200)
+      const { entity: e2, ledger: l2 } = makeReproducingParent(200)
+      const child1 = processReproduction(e1, makeRng(7), l1, cfg, CURRENT_TICK, CHILD_ID)
+      const child2 = processReproduction(e2, makeRng(7), l2, cfg, CURRENT_TICK, CHILD_ID)
+      expect(child1?.genome.tape).toEqual(child2?.genome.tape)
     })
   })
 })

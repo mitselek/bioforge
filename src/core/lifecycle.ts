@@ -6,10 +6,11 @@
  * See docs/superpowers/specs/2026-04-10-bioforge-design.md §5.3, §4.1, §6.3, §6.4.
  */
 
-import type { Entity } from './entity.js'
+import type { Entity, EntityId } from './entity.js'
 import type { Ledger } from './energy.js'
 import type { DeadMatterRegistry, Corpse } from './deadMatter.js'
 import type { Config } from './config.js'
+import type { Rng } from './rng.js'
 
 export interface DeathResult {
   readonly died: boolean
@@ -57,4 +58,30 @@ export function checkDeath(
 
   ledger.unregister({ kind: 'entity', id: entity.id })
   return { died: true, corpse: null }
+}
+
+/**
+ * Process a reproduction request for an entity.
+ *
+ * If `entity.reproRequested` is true, creates a child entity, transfers
+ * `reproCostFraction` of parent energy to the child via the ledger, applies
+ * genome and stats mutation, resets the flag, and records `lastReproTick`.
+ *
+ * Returns the new child Entity, or null if `reproRequested` was false.
+ *
+ * Story 4.3 AC2. Spec §6.1, §6.2, §6.3, §8, §2.
+ *
+ * @stub — implementation pending GREEN phase
+ */
+export function processReproduction(
+  entity: Entity,
+  rng: Rng,
+  ledger: Ledger,
+  cfg: Config,
+  currentTick: number,
+  childId: EntityId,
+): Entity | null {
+  throw new Error(
+    `processReproduction not implemented: entity=${String(entity.id)} rng=${typeof rng} ledger=${typeof ledger} cfg=${typeof cfg} currentTick=${String(currentTick)} childId=${String(childId)}`,
+  )
 }
