@@ -4,10 +4,10 @@
  * Story 3.2 implements the spatial index only. Movement and collisions
  * come in Story 4.1.
  *
- * RED-phase stub — implementation in GREEN.
- *
  * See docs/superpowers/specs/2026-04-10-bioforge-design.md §9.4.
  */
+
+import { wrap } from './world.js'
 
 export interface SpatialIndex {
   insert(id: number, position: { readonly x: number; readonly y: number }): void
@@ -16,7 +16,49 @@ export interface SpatialIndex {
 }
 
 export function makeSpatialIndex(worldW: number, worldH: number, cellSize: number): SpatialIndex {
-  throw new Error(
-    `physics.makeSpatialIndex: not implemented (worldW=${String(worldW)} worldH=${String(worldH)} cellSize=${String(cellSize)})`,
-  )
+  const cols = Math.ceil(worldW / cellSize)
+  const rows = Math.ceil(worldH / cellSize)
+  const cells: number[][] = []
+  for (let i = 0; i < cols * rows; i++) {
+    cells.push([])
+  }
+
+  const cellIndex = (x: number, y: number): number => {
+    const col = Math.floor(wrap(x, worldW) / cellSize) % cols
+    const row = Math.floor(wrap(y, worldH) / cellSize) % rows
+    return row * cols + col
+  }
+
+  return {
+    insert(id: number, position: { readonly x: number; readonly y: number }): void {
+      const idx = cellIndex(position.x, position.y)
+      cells[idx]?.push(id)
+    },
+    clear(): void {
+      for (const cell of cells) {
+        cell.length = 0
+      }
+    },
+    *queryRadius(
+      center: { readonly x: number; readonly y: number },
+      radius: number,
+    ): Generator<number> {
+      const cellSpan = Math.ceil(radius / cellSize)
+      const centerCol = Math.floor(wrap(center.x, worldW) / cellSize) % cols
+      const centerRow = Math.floor(wrap(center.y, worldH) / cellSize) % rows
+
+      for (let dy = -cellSpan; dy <= cellSpan; dy++) {
+        for (let dx = -cellSpan; dx <= cellSpan; dx++) {
+          const col = (((centerCol + dx) % cols) + cols) % cols
+          const row = (((centerRow + dy) % rows) + rows) % rows
+          const cell = cells[row * cols + col]
+          if (cell !== undefined) {
+            for (const id of cell) {
+              yield id
+            }
+          }
+        }
+      }
+    },
+  }
 }
