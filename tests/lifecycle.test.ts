@@ -1,0 +1,160 @@
+import { describe, it, expect } from 'vitest'
+import { checkDeath } from '../src/core/lifecycle.js'
+import { makeEntity, entityId } from '../src/core/entity.js'
+import { defaultConfig, makeConfig } from '../src/core/config.js'
+import { makeLedger } from '../src/core/energy.js'
+import { makeDeadMatterRegistry } from '../src/core/deadMatter.js'
+import { makeRng } from '../src/core/rng.js'
+import { randomGenome } from '../src/core/genome.js'
+
+// Story 4.3 AC1 — death conditions and corpse creation
+// Spec §5.3 (death conditions), §4.1 (corpse creation), §2.5 (ENERGY_EPSILON), §2 (conservation)
+
+const cfg = defaultConfig()
+
+function makeHerbivore(
+  energy: number,
+  age: number,
+  lifespan: number,
+): ReturnType<typeof makeEntity> {
+  const rng = makeRng(1)
+  const stats = cfg.species.herbivore
+  const entity = makeEntity({
+    id: entityId(1),
+    species: 'herbivore',
+    position: { x: 20, y: 10 },
+    orientation: 0,
+    energy,
+    lifespan,
+    maturityAge: 300,
+    genome: randomGenome(rng, cfg),
+    stats,
+  })
+  entity.age = age
+  return entity
+}
+
+function makeLedgerWith(energy: number): ReturnType<typeof makeLedger> {
+  const ledger = makeLedger({ totalEnergy: energy + 1000, initialSoil: 1000 })
+  ledger.register({ kind: 'entity', id: 1 }, energy)
+  return ledger
+}
+
+describe('checkDeath', () => {
+  describe('death conditions', () => {
+    it('returns died=true when age >= lifespan (old age)', () => {
+      // AC1: age equals lifespan — entity should die
+      const entity = makeHerbivore(50, 900, 900)
+      const ledger = makeLedgerWith(50)
+      const dm = makeDeadMatterRegistry()
+      const result = checkDeath(entity, ledger, dm, cfg)
+      expect(result.died).toBe(true)
+    })
+
+    it('returns died=true when age exceeds lifespan', () => {
+      // AC1: age past lifespan also triggers death
+      const entity = makeHerbivore(50, 950, 900)
+      const ledger = makeLedgerWith(50)
+      const dm = makeDeadMatterRegistry()
+      const result = checkDeath(entity, ledger, dm, cfg)
+      expect(result.died).toBe(true)
+    })
+
+    it('returns died=true when energy <= energyEpsilon (starvation)', () => {
+      // AC2: energy at epsilon threshold is considered zero — starvation death
+      const entity = makeHerbivore(cfg.energyEpsilon, 10, 900)
+      const ledger = makeLedgerWith(cfg.energyEpsilon)
+      const dm = makeDeadMatterRegistry()
+      const result = checkDeath(entity, ledger, dm, cfg)
+      expect(result.died).toBe(true)
+    })
+
+    it('returns died=false when age < lifespan and energy > energyEpsilon', () => {
+      // AC3: healthy entity survives
+      const entity = makeHerbivore(50, 10, 900)
+      const ledger = makeLedgerWith(50)
+      const dm = makeDeadMatterRegistry()
+      const result = checkDeath(entity, ledger, dm, cfg)
+      expect(result.died).toBe(false)
+      expect(result.corpse).toBeNull()
+    })
+  })
+
+  describe('corpse creation on death', () => {
+    it('creates a corpse with the entity energy at death position', () => {
+      // AC4: corpse appears at entity position with entity's remaining energy
+      const entity = makeHerbivore(75, 900, 900)
+      const ledger = makeLedgerWith(75)
+      const dm = makeDeadMatterRegistry()
+      const result = checkDeath(entity, ledger, dm, cfg)
+      expect(result.corpse).not.toBeNull()
+      expect(result.corpse?.energy).toBeCloseTo(75, 10)
+      expect(result.corpse?.position).toEqual({ x: 20, y: 10 })
+    })
+
+    it('registers the corpse in the dead matter registry', () => {
+      // AC5: corpse can be found by iterating the registry
+      const entity = makeHerbivore(75, 900, 900)
+      const ledger = makeLedgerWith(75)
+      const dm = makeDeadMatterRegistry()
+      checkDeath(entity, ledger, dm, cfg)
+      expect([...dm.corpses()]).toHaveLength(1)
+    })
+
+    it('unregisters entity pool from ledger after death', () => {
+      // AC6: entity pool no longer exists in ledger
+      const entity = makeHerbivore(75, 900, 900)
+      const ledger = makeLedgerWith(75)
+      const dm = makeDeadMatterRegistry()
+      checkDeath(entity, ledger, dm, cfg)
+      expect(() => ledger.get({ kind: 'entity', id: 1 })).toThrow()
+    })
+  })
+
+  describe('energy conservation', () => {
+    it('totalEnergy is unchanged after old-age death', () => {
+      // AC7: energy moves from entity pool to corpse pool, total unchanged
+      const entity = makeHerbivore(75, 900, 900)
+      const ledger = makeLedgerWith(75)
+      const dm = makeDeadMatterRegistry()
+      const totalBefore = ledger.totalEnergy()
+      checkDeath(entity, ledger, dm, cfg)
+      expect(ledger.totalEnergy()).toBeCloseTo(totalBefore, 10)
+    })
+
+    it('totalEnergy is unchanged after starvation death', () => {
+      // AC7: conservation holds even for near-zero energy deaths
+      const entity = makeHerbivore(cfg.energyEpsilon, 10, 900)
+      const ledger = makeLedgerWith(cfg.energyEpsilon)
+      const dm = makeDeadMatterRegistry()
+      const totalBefore = ledger.totalEnergy()
+      checkDeath(entity, ledger, dm, cfg)
+      expect(ledger.totalEnergy()).toBeCloseTo(totalBefore, 10)
+    })
+  })
+
+  describe('zero-energy elision', () => {
+    it('returns null corpse when entity had no energy at death', () => {
+      // AC8: zero-energy corpse is elided (spec §4.1)
+      const cfg2 = makeConfig({ energyEpsilon: 0 })
+      const entity = makeHerbivore(0, 900, 900)
+      const ledger = makeLedger({ totalEnergy: 1000, initialSoil: 1000 })
+      ledger.register({ kind: 'entity', id: 1 }, 0)
+      const dm = makeDeadMatterRegistry()
+      const result = checkDeath(entity, ledger, dm, cfg2)
+      expect(result.died).toBe(true)
+      expect(result.corpse).toBeNull()
+    })
+
+    it('adds no entry to dead matter registry when energy was zero', () => {
+      // AC8: registry stays empty for zero-energy death
+      const cfg2 = makeConfig({ energyEpsilon: 0 })
+      const entity = makeHerbivore(0, 900, 900)
+      const ledger = makeLedger({ totalEnergy: 1000, initialSoil: 1000 })
+      ledger.register({ kind: 'entity', id: 1 }, 0)
+      const dm = makeDeadMatterRegistry()
+      checkDeath(entity, ledger, dm, cfg2)
+      expect([...dm.corpses()]).toHaveLength(0)
+    })
+  })
+})
