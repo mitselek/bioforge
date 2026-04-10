@@ -34,9 +34,13 @@ export function applyDecomposerEating(
   ledger: Ledger,
   cfg: Config,
 ): void {
-  throw new Error(
-    `applyDecomposerEating not implemented: decomposer=${String(decomposer.id)} target=${String(target.id)} dt=${String(dt)} ledger=${typeof ledger} cfg=${typeof cfg} targetPool=${targetPool.kind}`,
-  )
+  void cfg
+  const eaten = Math.min(decomposer.stats.eatRate * dt, target.energy)
+  if (eaten === 0) return
+  ledger.transfer(targetPool, { kind: 'entity', id: decomposer.id }, eaten)
+  target.energy -= eaten
+  decomposer.energy += eaten
+  decomposer.wasteBuffer += eaten * (1 - decomposer.stats.efficiency)
 }
 
 /**
