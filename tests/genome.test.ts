@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { randomGenome } from '../src/core/genome.js'
+import { randomGenome, mutateGenome } from '../src/core/genome.js'
 import type { Opcode } from '../src/core/genome.js'
 import { makeRng } from '../src/core/rng.js'
-import { defaultConfig } from '../src/core/config.js'
+import { defaultConfig, makeConfig } from '../src/core/config.js'
 
 const ALL_OPCODES = [
   'MOVE_FORWARD',
@@ -141,6 +141,121 @@ describe('genome', () => {
       for (const [op, expectedRatio] of Object.entries(expected)) {
         const actualRatio = (counts[op] ?? 0) / total
         expect(Math.abs(actualRatio - expectedRatio)).toBeLessThan(0.02)
+      }
+    })
+  })
+
+  describe('mutateGenome', () => {
+    const cfg = defaultConfig()
+
+    it('returns a genome within tape-length bounds with ip = 0', () => {
+      // With default mutation rates, length is USUALLY preserved
+      // (insert/delete are ~3% per tape each) but not guaranteed.
+      // Cycle 2 will pin length-change invariants directly.
+      const rng = makeRng(42)
+      const parent = randomGenome(makeRng(7), cfg)
+      const child = mutateGenome(rng, parent, cfg)
+      expect(child.tape.length).toBeGreaterThanOrEqual(cfg.minTapeLength)
+      expect(child.tape.length).toBeLessThanOrEqual(cfg.maxTapeLength)
+      expect(child.ip).toBe(0)
+    })
+
+    it('does not mutate the parent genome (returns a fresh copy)', () => {
+      const parent = randomGenome(makeRng(7), cfg)
+      const parentSnapshot = JSON.stringify(parent)
+      const rng = makeRng(42)
+      mutateGenome(rng, parent, cfg)
+      // Parent must be byte-identical after mutation — no aliasing
+      expect(JSON.stringify(parent)).toBe(parentSnapshot)
+    })
+
+    it('arg drift: mutated args stay in [0, 1] after clamping', () => {
+      // Force high drift to stress the clamp: 100% per-instruction drift
+      // with σ = 0.5 pushes args far from their original values.
+      const highMutCfg = makeConfig({
+        mutationRates: {
+          ...cfg.mutationRates,
+          argDrift: 1.0,
+          argDriftSigma: 0.5,
+          opSwap: 0,
+          insert: 0,
+          delete: 0,
+          statDrift: 0,
+        },
+      })
+      const parent = randomGenome(makeRng(7), highMutCfg)
+      for (let seed = 1; seed <= 50; seed++) {
+        const child = mutateGenome(makeRng(seed), parent, highMutCfg)
+        for (const inst of child.tape) {
+          expect(inst.arg1).toBeGreaterThanOrEqual(0)
+          expect(inst.arg1).toBeLessThanOrEqual(1)
+          if (
+            inst.op === 'SENSE_FOOD' ||
+            inst.op === 'SENSE_PREDATOR' ||
+            inst.op === 'SENSE_MATE'
+          ) {
+            expect(inst.arg2).toBeGreaterThanOrEqual(0)
+            expect(inst.arg2).toBeLessThanOrEqual(1)
+          }
+        }
+      }
+    })
+
+    it('op swap: mutated tape contains only valid opcodes', () => {
+      const highSwapCfg = makeConfig({
+        mutationRates: {
+          ...cfg.mutationRates,
+          argDrift: 0,
+          opSwap: 1.0,
+          insert: 0,
+          delete: 0,
+          statDrift: 0,
+        },
+      })
+      const validOpcodes = new Set<string>([
+        'MOVE_FORWARD',
+        'TURN_LEFT',
+        'TURN_RIGHT',
+        'SENSE_FOOD',
+        'SENSE_PREDATOR',
+        'SENSE_MATE',
+        'JUMP_IF_TRUE',
+        'JUMP_IF_FALSE',
+        'REPRODUCE',
+      ])
+      const parent = randomGenome(makeRng(7), highSwapCfg)
+      const child = mutateGenome(makeRng(42), parent, highSwapCfg)
+      for (const inst of child.tape) {
+        expect(validOpcodes.has(inst.op)).toBe(true)
+      }
+    })
+
+    it('is deterministic for the same seed', () => {
+      const parent = randomGenome(makeRng(7), cfg)
+      const a = mutateGenome(makeRng(42), parent, cfg)
+      const b = mutateGenome(makeRng(42), parent, cfg)
+      expect(JSON.stringify(a)).toBe(JSON.stringify(b))
+    })
+
+    it('jump targets remain valid integers in [0, tape.length - 1]', () => {
+      const highMutCfg = makeConfig({
+        mutationRates: {
+          ...cfg.mutationRates,
+          argDrift: 1.0,
+          opSwap: 1.0,
+          insert: 0,
+          delete: 0,
+          statDrift: 0,
+        },
+      })
+      const parent = randomGenome(makeRng(7), highMutCfg)
+      const child = mutateGenome(makeRng(42), parent, highMutCfg)
+      for (const inst of child.tape) {
+        if (inst.op === 'JUMP_IF_TRUE' || inst.op === 'JUMP_IF_FALSE') {
+          expect(Number.isInteger(inst.target)).toBe(true)
+          expect(inst.target).toBeGreaterThanOrEqual(0)
+          expect(inst.target).toBeLessThan(child.tape.length)
+        }
       }
     })
   })

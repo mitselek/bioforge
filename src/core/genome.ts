@@ -46,6 +46,12 @@ export function randomGenome(rng: Rng, cfg: Config): Genome {
   return { tape, ip: 0 }
 }
 
+export function mutateGenome(rng: Rng, parent: Genome, cfg: Config): Genome {
+  throw new Error(
+    `genome.mutateGenome: not implemented (parentLen=${String(parent.tape.length)} argDrift=${String(cfg.mutationRates.argDrift)} opSwap=${String(cfg.mutationRates.opSwap)} rngFloat=${typeof rng.float})`,
+  )
+}
+
 function makeRandomInstruction(rng: Rng, tapeLength: number): Instruction {
   // Biased distribution per spec §7.2 (rebalanced for the 9-opcode set
   // including REPRODUCE):
