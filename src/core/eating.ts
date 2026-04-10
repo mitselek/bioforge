@@ -34,7 +34,12 @@ export function applyEating(
   ledger: Ledger,
   cfg: Config,
 ): void {
-  throw new Error(
-    `applyEating not implemented: predator=${String(predator.id)} prey=${String(prey.id)} dt=${String(dt)} ledger=${typeof ledger} cfg=${typeof cfg}`,
-  )
+  void cfg
+  const eaten = Math.min(predator.stats.eatRate * dt, prey.energy)
+  if (eaten === 0) return
+  const wasted = eaten * (1 - predator.stats.efficiency)
+  ledger.transfer({ kind: 'entity', id: prey.id }, { kind: 'entity', id: predator.id }, eaten)
+  predator.energy += eaten
+  prey.energy -= eaten
+  predator.wasteBuffer += wasted
 }
