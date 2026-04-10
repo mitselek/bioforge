@@ -195,5 +195,46 @@ export function makeConfig(overrides: Partial<Config> = {}): Config {
 }
 
 export function validateConfig(cfg: Config): void {
-  throw new Error(`config.validateConfig: not implemented (seed=${String(cfg.seed)})`)
+  const fail = (msg: string): never => {
+    throw new Error(`config: ${msg}`)
+  }
+
+  if (!Number.isFinite(cfg.totalEnergy) || cfg.totalEnergy <= 0) {
+    fail(`invalid totalEnergy ${String(cfg.totalEnergy)}`)
+  }
+  if (!Number.isFinite(cfg.worldW) || cfg.worldW <= 0) {
+    fail(`invalid worldW ${String(cfg.worldW)}`)
+  }
+  if (!Number.isFinite(cfg.worldH) || cfg.worldH <= 0) {
+    fail(`invalid worldH ${String(cfg.worldH)}`)
+  }
+
+  const living =
+    cfg.initialCounts.plant * cfg.species.plant.initialEnergy +
+    cfg.initialCounts.herbivore * cfg.species.herbivore.initialEnergy +
+    cfg.initialCounts.carnivore * cfg.species.carnivore.initialEnergy +
+    cfg.initialCounts.decomposer * cfg.species.decomposer.initialEnergy
+  if (living > cfg.totalEnergy) {
+    fail(`initial living energy ${String(living)} exceeds totalEnergy ${String(cfg.totalEnergy)}`)
+  }
+
+  for (const species of ['plant', 'herbivore', 'carnivore', 'decomposer'] as const) {
+    const s = cfg.species[species]
+    if (s.maturityAgeMean >= s.lifespanMean) {
+      fail(
+        `${species}: maturityAgeMean (${String(s.maturityAgeMean)}) must be < lifespanMean (${String(s.lifespanMean)})`,
+      )
+    }
+    if (s.maturityAgeMean >= s.lifespanMean - cfg.minReproWindow) {
+      fail(
+        `${species}: maturityAgeMean (${String(s.maturityAgeMean)}) must be < lifespanMean - minReproWindow`,
+      )
+    }
+    if (s.radius <= 0) {
+      fail(`${species}: radius must be > 0`)
+    }
+    if (s.initialEnergy <= 0) {
+      fail(`${species}: initialEnergy must be > 0`)
+    }
+  }
 }
