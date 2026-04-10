@@ -5,8 +5,6 @@
  * carnivore, decomposer) use. The species discriminator + per-species
  * stats from config provide the differentiation.
  *
- * RED-phase stub — implementation in GREEN.
- *
  * See docs/superpowers/specs/2026-04-10-bioforge-design.md §3, §6.1.
  */
 
@@ -83,7 +81,20 @@ export interface MakeEntityArgs {
 }
 
 export function makeEntity(args: MakeEntityArgs): Entity {
-  throw new Error(
-    `entity.makeEntity: not implemented (id=${String(args.id)} species=${args.species})`,
-  )
+  return {
+    id: args.id,
+    species: args.species,
+    position: args.position,
+    velocity: { x: 0, y: 0 },
+    orientation: args.orientation,
+    energy: args.energy,
+    wasteBuffer: 0,
+    age: args.age ?? 0,
+    lifespan: args.lifespan,
+    maturityAge: args.maturityAge,
+    lastReproTick: Number.NEGATIVE_INFINITY,
+    genome: args.genome,
+    lastSense: NO_SENSE,
+    stats: args.stats,
+  }
 }
