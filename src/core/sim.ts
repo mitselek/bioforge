@@ -11,6 +11,7 @@
  */
 
 import type { Config, Species } from './config.js'
+import { makeRng } from './rng.js'
 import type { Rng } from './rng.js'
 import { makeEntity, entityId } from './entity.js'
 import type { Entity } from './entity.js'
@@ -50,30 +51,35 @@ export interface Sim {
  *
  * Story 5.1 AC5.1.1-7. Spec §10, §17, §2.
  */
-export function makeSim(cfg: Config, rng: Rng): Sim {
+function seedState(
+  cfg: Config,
+  seedRng: Rng,
+): { entities: Map<number, Entity>; ledger: Ledger; nextId: number } {
   const entities = new Map<number, Entity>()
   let totalLiving = 0
-
   const allSpecies: Species[] = ['plant', 'herbivore', 'carnivore', 'decomposer']
   let nextId = 1
   for (const sp of allSpecies) {
     const stats = cfg.species[sp]
     const count = cfg.initialCounts[sp]
     for (let i = 0; i < count; i++) {
-      const lifespan = Math.max(1, rng.gaussian(stats.lifespanMean, stats.lifespanStddev))
+      const lifespan = Math.max(1, seedRng.gaussian(stats.lifespanMean, stats.lifespanStddev))
       const maturityAge = Math.min(
-        Math.max(0, rng.gaussian(stats.maturityAgeMean, stats.maturityAgeStddev)),
+        Math.max(0, seedRng.gaussian(stats.maturityAgeMean, stats.maturityAgeStddev)),
         lifespan - cfg.minReproWindow - 1,
       )
       const entity = makeEntity({
         id: entityId(nextId),
         species: sp,
-        position: { x: rng.floatInRange(0, cfg.worldW), y: rng.floatInRange(0, cfg.worldH) },
-        orientation: rng.floatInRange(0, 2 * Math.PI),
+        position: {
+          x: seedRng.floatInRange(0, cfg.worldW),
+          y: seedRng.floatInRange(0, cfg.worldH),
+        },
+        orientation: seedRng.floatInRange(0, 2 * Math.PI),
         energy: stats.initialEnergy,
         lifespan,
         maturityAge,
-        genome: randomGenome(rng, cfg),
+        genome: randomGenome(seedRng, cfg),
         stats,
       })
       entities.set(nextId, entity)
@@ -81,14 +87,18 @@ export function makeSim(cfg: Config, rng: Rng): Sim {
       nextId++
     }
   }
-
   const soilEnergy = cfg.totalEnergy - totalLiving
   const ledger = makeLedger({ totalEnergy: cfg.totalEnergy, initialSoil: soilEnergy })
   for (const entity of entities.values()) {
     ledger.register({ kind: 'entity', id: entity.id }, entity.energy)
   }
+  return { entities, ledger, nextId }
+}
 
-  const deadMatter = makeDeadMatterRegistry()
+export function makeSim(cfg: Config, rng: Rng): Sim {
+  let { entities, ledger, nextId } = seedState(cfg, rng)
+  let tickRng: Rng = rng
+  let deadMatter = makeDeadMatterRegistry()
   const spatialIndex = makeSpatialIndex(cfg.worldW, cfg.worldH, 2)
 
   let currentTick = 0
@@ -208,7 +218,7 @@ export function makeSim(cfg: Config, rng: Rng): Sim {
         if (entity === undefined || entity.species === 'plant') continue
         const child = processReproduction(
           entity,
-          rng,
+          tickRng,
           ledger,
           cfg,
           currentTick,
@@ -272,7 +282,7 @@ export function makeSim(cfg: Config, rng: Rng): Sim {
       // compost-adjacent plant spawning
       const exhaustedCompost: number[] = []
       for (const compost of deadMatter.compost()) {
-        const child = tryCompostSpawn(compost, entityId(nextId), rng, ledger, deadMatter, cfg)
+        const child = tryCompostSpawn(compost, entityId(nextId), tickRng, ledger, deadMatter, cfg)
         if (child !== null) {
           entities.set(child.id, child)
           nextId++
@@ -292,7 +302,15 @@ export function makeSim(cfg: Config, rng: Rng): Sim {
     },
 
     reset(): void {
-      throw new Error('reset not implemented')
+      const freshRng = makeRng(cfg.seed)
+      const reseeded = seedState(cfg, freshRng)
+      entities = reseeded.entities
+      ledger = reseeded.ledger
+      nextId = reseeded.nextId
+      tickRng = freshRng
+      deadMatter = makeDeadMatterRegistry()
+      spatialIndex.clear()
+      currentTick = 0
     },
     assertEnergyConserved(): void {
       ledger.assertEnergyConserved()
