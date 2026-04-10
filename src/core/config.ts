@@ -1,10 +1,11 @@
 /**
  * BioForge configuration: tunable constants and per-species defaults.
  *
- * RED-phase stub — defaultConfig throws; types are complete so the test
- * file compiles.
+ * `defaultConfig()` returns the canonical starting configuration. All
+ * values are traceable to the design spec; see the citations below.
  *
- * See docs/superpowers/specs/2026-04-10-bioforge-design.md §3.6, §15.2, §17.
+ * See docs/superpowers/specs/2026-04-10-bioforge-design.md §3.6 (per-species
+ * stats), §15.2 (tunables), §17 (initial seeding budget).
  */
 
 export type Species = 'plant' | 'herbivore' | 'carnivore' | 'decomposer'
@@ -67,5 +68,117 @@ export interface Config {
 }
 
 export function defaultConfig(): Config {
-  throw new Error('config.defaultConfig: not implemented')
+  return {
+    seed: 42,
+    totalEnergy: 100_000,
+    worldW: 80,
+    worldH: 30,
+    baseHz: 30,
+    poopThreshold: 10.0,
+    corpseDecayRate: 1.0,
+    poopDecayRate: 0.0,
+    minReproWindow: 100,
+    reproCooldownTicks: 200,
+    compostRadius: 3.0,
+    compostBoost: 0.5,
+    compostBoostCap: 3.0,
+    compostSpawnRadius: 2.0,
+    plantSpawnBaseProb: 0.001,
+    minTapeLength: 2,
+    maxTapeLength: 64,
+    initialTapeLengthMin: 6,
+    initialTapeLengthMax: 16,
+    turnRate: Math.PI,
+    autoSpawnPlants: true,
+    energyEpsilon: 1e-6,
+    mutationRates: {
+      argDrift: 0.1,
+      argDriftSigma: 0.05,
+      opSwap: 0.05,
+      insert: 0.03,
+      delete: 0.03,
+      statDrift: 0.05,
+      statDriftSigma: 0.1,
+    },
+    species: {
+      plant: {
+        radius: 0.4,
+        maxSpeed: 0,
+        baseMetabolicRate: 0.01,
+        moveCostLinear: 0,
+        moveCostQuadratic: 0,
+        eatRate: 0,
+        absorbRate: 2.0,
+        efficiency: 1.0,
+        lifespanMean: 1200,
+        lifespanStddev: 100,
+        maturityAgeMean: 400,
+        maturityAgeStddev: 50,
+        reproThresholdEnergy: 0,
+        reproCostFraction: 0,
+        initialEnergy: 50,
+        maxSenseRange: 15,
+      },
+      herbivore: {
+        radius: 0.5,
+        maxSpeed: 1.2,
+        baseMetabolicRate: 0.05,
+        moveCostLinear: 0.02,
+        moveCostQuadratic: 0.04,
+        eatRate: 5.0,
+        absorbRate: 0,
+        efficiency: 0.7,
+        lifespanMean: 900,
+        lifespanStddev: 90,
+        maturityAgeMean: 300,
+        maturityAgeStddev: 40,
+        reproThresholdEnergy: 150.0,
+        reproCostFraction: 0.5,
+        initialEnergy: 100,
+        maxSenseRange: 15,
+      },
+      carnivore: {
+        radius: 0.7,
+        maxSpeed: 1.8,
+        baseMetabolicRate: 0.1,
+        moveCostLinear: 0.03,
+        moveCostQuadratic: 0.06,
+        eatRate: 10000.0,
+        absorbRate: 0,
+        efficiency: 0.6,
+        lifespanMean: 1500,
+        lifespanStddev: 150,
+        maturityAgeMean: 500,
+        maturityAgeStddev: 60,
+        reproThresholdEnergy: 250.0,
+        reproCostFraction: 0.5,
+        initialEnergy: 200,
+        maxSenseRange: 15,
+      },
+      decomposer: {
+        radius: 0.4,
+        maxSpeed: 0.8,
+        baseMetabolicRate: 0.02,
+        moveCostLinear: 0.02,
+        moveCostQuadratic: 0.03,
+        eatRate: 1.67,
+        absorbRate: 0,
+        efficiency: 0.9,
+        lifespanMean: 1000,
+        lifespanStddev: 100,
+        maturityAgeMean: 300,
+        maturityAgeStddev: 40,
+        reproThresholdEnergy: 100.0,
+        reproCostFraction: 0.5,
+        initialEnergy: 80,
+        maxSenseRange: 15,
+      },
+    },
+    initialCounts: {
+      plant: 250,
+      herbivore: 100,
+      carnivore: 40,
+      decomposer: 50,
+    },
+  }
 }
