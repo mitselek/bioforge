@@ -193,3 +193,7 @@ export function makeConfig(overrides: Partial<Config> = {}): Config {
     mutationRates: { ...d.mutationRates, ...(overrides.mutationRates ?? {}) },
   }
 }
+
+export function validateConfig(cfg: Config): void {
+  throw new Error(`config.validateConfig: not implemented (seed=${String(cfg.seed)})`)
+}

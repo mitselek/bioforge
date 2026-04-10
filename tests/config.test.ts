@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { defaultConfig, makeConfig } from '../src/core/config.js'
+import { defaultConfig, makeConfig, validateConfig } from '../src/core/config.js'
 
 describe('config', () => {
   describe('defaultConfig', () => {
@@ -144,6 +144,118 @@ describe('config', () => {
 
     it('plant.reproCostFraction is 0 (no standard reproduction, spec §6.3)', () => {
       expect(defaultConfig().species.plant.reproCostFraction).toBe(0)
+    })
+  })
+
+  describe('validateConfig', () => {
+    it('accepts the default config', () => {
+      expect(() => {
+        validateConfig(defaultConfig())
+      }).not.toThrow()
+    })
+
+    it('rejects non-finite totalEnergy', () => {
+      expect(() => {
+        validateConfig(makeConfig({ totalEnergy: NaN }))
+      }).toThrow(/totalEnergy/)
+      expect(() => {
+        validateConfig(makeConfig({ totalEnergy: Infinity }))
+      }).toThrow(/totalEnergy/)
+    })
+
+    it('rejects non-positive totalEnergy', () => {
+      expect(() => {
+        validateConfig(makeConfig({ totalEnergy: 0 }))
+      }).toThrow(/totalEnergy/)
+      expect(() => {
+        validateConfig(makeConfig({ totalEnergy: -100 }))
+      }).toThrow(/totalEnergy/)
+    })
+
+    it('rejects non-positive world dimensions', () => {
+      expect(() => {
+        validateConfig(makeConfig({ worldW: 0 }))
+      }).toThrow(/worldW/)
+      expect(() => {
+        validateConfig(makeConfig({ worldH: -1 }))
+      }).toThrow(/worldH/)
+      expect(() => {
+        validateConfig(makeConfig({ worldW: NaN }))
+      }).toThrow(/worldW/)
+    })
+
+    it('rejects living energy budget exceeding totalEnergy', () => {
+      expect(() => {
+        validateConfig(
+          makeConfig({
+            initialCounts: { plant: 100000, herbivore: 0, carnivore: 0, decomposer: 0 },
+          }),
+        )
+      }).toThrow(/exceeds/)
+    })
+
+    it('rejects maturityAge >= lifespan', () => {
+      const def = defaultConfig()
+      expect(() => {
+        validateConfig(
+          makeConfig({
+            species: {
+              plant: def.species.plant,
+              herbivore: { ...def.species.herbivore, maturityAgeMean: 1000, lifespanMean: 500 },
+              carnivore: def.species.carnivore,
+              decomposer: def.species.decomposer,
+            },
+          }),
+        )
+      }).toThrow(/maturityAge/)
+    })
+
+    it('rejects maturityAge >= lifespan - minReproWindow', () => {
+      const def = defaultConfig()
+      expect(() => {
+        validateConfig(
+          makeConfig({
+            species: {
+              plant: def.species.plant,
+              herbivore: { ...def.species.herbivore, maturityAgeMean: 850, lifespanMean: 900 },
+              carnivore: def.species.carnivore,
+              decomposer: def.species.decomposer,
+            },
+          }),
+        )
+      }).toThrow(/maturityAge/)
+    })
+
+    it('rejects radius <= 0', () => {
+      const def = defaultConfig()
+      expect(() => {
+        validateConfig(
+          makeConfig({
+            species: {
+              plant: { ...def.species.plant, radius: 0 },
+              herbivore: def.species.herbivore,
+              carnivore: def.species.carnivore,
+              decomposer: def.species.decomposer,
+            },
+          }),
+        )
+      }).toThrow(/radius/)
+    })
+
+    it('rejects initialEnergy <= 0', () => {
+      const def = defaultConfig()
+      expect(() => {
+        validateConfig(
+          makeConfig({
+            species: {
+              plant: { ...def.species.plant, initialEnergy: 0 },
+              herbivore: def.species.herbivore,
+              carnivore: def.species.carnivore,
+              decomposer: def.species.decomposer,
+            },
+          }),
+        )
+      }).toThrow(/initialEnergy/)
     })
   })
 })
