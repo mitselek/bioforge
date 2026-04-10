@@ -172,4 +172,17 @@ describe('world.normalizeAngle', () => {
     const a = normalizeAngle(7.5)
     expect(normalizeAngle(a)).toBeCloseTo(a)
   })
+
+  it('wraps inputs in the (π, 2π) band to the negative half', () => {
+    // 3.5π is positive and > 2π is false but > π is true after % twoPi
+    // (3.5π % 2π = 1.5π, which is in the (π, 2π) band).
+    // The correction arm subtracts 2π → 1.5π - 2π = -0.5π = -π/2.
+    expect(normalizeAngle(3.5 * Math.PI)).toBeCloseTo(-Math.PI / 2)
+  })
+
+  it('wraps inputs in the (-2π, -π) band to the positive half', () => {
+    // -3.5π % 2π = -1.5π (sign-preserving JS modulo).
+    // -1.5π is in (-2π, -π) so the correction arm adds 2π → +0.5π = π/2.
+    expect(normalizeAngle(-3.5 * Math.PI)).toBeCloseTo(Math.PI / 2)
+  })
 })
