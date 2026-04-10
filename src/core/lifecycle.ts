@@ -80,6 +80,8 @@ export function processReproduction(
   cfg: Config,
   currentTick: number,
   childId: EntityId,
+  worldW: number,
+  worldH: number,
 ): Entity | null {
   if (!entity.reproRequested) return null
 
@@ -95,6 +97,11 @@ export function processReproduction(
   )
   const childGenome = mutateGenome(rng, entity.genome, cfg)
   const childStats = mutateStats(rng, entity.stats, cfg)
+
+  // TODO Story 4.3 AC4.3.3: apply small random offset to position, torus-wrapped
+  // worldW and worldH are reserved for this offset computation (GREEN phase)
+  void worldW
+  void worldH
 
   const child = makeEntity({
     id: childId,

@@ -196,7 +196,16 @@ describe('processReproduction', () => {
       const { entity, ledger } = makeReproducingParent(200)
       entity.reproRequested = false
       const rng = makeRng(7)
-      const result = processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      const result = processReproduction(
+        entity,
+        rng,
+        ledger,
+        cfg,
+        CURRENT_TICK,
+        CHILD_ID,
+        cfg.worldW,
+        cfg.worldH,
+      )
       expect(result).toBeNull()
     })
 
@@ -207,7 +216,7 @@ describe('processReproduction', () => {
       const energyBefore = entity.energy
       const reproTickBefore = entity.lastReproTick
       const rng = makeRng(7)
-      processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID, cfg.worldW, cfg.worldH)
       expect(entity.energy).toBe(energyBefore)
       expect(entity.lastReproTick).toBe(reproTickBefore)
     })
@@ -218,7 +227,16 @@ describe('processReproduction', () => {
       // AC1: a child is produced
       const { entity, ledger } = makeReproducingParent(200)
       const rng = makeRng(7)
-      const child = processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      const child = processReproduction(
+        entity,
+        rng,
+        ledger,
+        cfg,
+        CURRENT_TICK,
+        CHILD_ID,
+        cfg.worldW,
+        cfg.worldH,
+      )
       expect(child).not.toBeNull()
     })
 
@@ -226,24 +244,56 @@ describe('processReproduction', () => {
       // AC7: child initial state
       const { entity, ledger } = makeReproducingParent(200)
       const rng = makeRng(7)
-      const child = processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      const child = processReproduction(
+        entity,
+        rng,
+        ledger,
+        cfg,
+        CURRENT_TICK,
+        CHILD_ID,
+        cfg.worldW,
+        cfg.worldH,
+      )
       expect(child?.age).toBe(0)
       expect(child?.reproRequested).toBe(false)
     })
 
-    it('child position matches parent position', () => {
-      // AC6: child spawns at parent location
+    it('child position is near parent position (within 1 unit each axis)', () => {
+      // AC4.3.3 AC2: offset is small — child spawns close to parent, not far away
       const { entity, ledger } = makeReproducingParent(200)
       const rng = makeRng(7)
-      const child = processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
-      expect(child?.position).toEqual({ x: 30, y: 12 })
+      const child = processReproduction(
+        entity,
+        rng,
+        ledger,
+        cfg,
+        CURRENT_TICK,
+        CHILD_ID,
+        cfg.worldW,
+        cfg.worldH,
+      )
+      // Use torus-aware delta: child may have wrapped, so check shortest distance
+      if (child === null) throw new Error('child should not be null')
+      const dx = Math.abs(((child.position.x - 30 + cfg.worldW / 2) % cfg.worldW) - cfg.worldW / 2)
+      const dy = Math.abs(((child.position.y - 12 + cfg.worldH / 2) % cfg.worldH) - cfg.worldH / 2)
+      expect(dx).toBeLessThanOrEqual(1)
+      expect(dy).toBeLessThanOrEqual(1)
     })
 
     it('child has the assigned id', () => {
       // AC1: child uses the provided childId
       const { entity, ledger } = makeReproducingParent(200)
       const rng = makeRng(7)
-      const child = processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      const child = processReproduction(
+        entity,
+        rng,
+        ledger,
+        cfg,
+        CURRENT_TICK,
+        CHILD_ID,
+        cfg.worldW,
+        cfg.worldH,
+      )
       expect(child?.id).toBe(CHILD_ID)
     })
   })
@@ -253,7 +303,16 @@ describe('processReproduction', () => {
       // AC2: herbivore reproCostFraction=0.5, parent energy=200 → child gets 100
       const { entity, ledger } = makeReproducingParent(200)
       const rng = makeRng(7)
-      const child = processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      const child = processReproduction(
+        entity,
+        rng,
+        ledger,
+        cfg,
+        CURRENT_TICK,
+        CHILD_ID,
+        cfg.worldW,
+        cfg.worldH,
+      )
       const expectedChildEnergy = 200 * cfg.species.herbivore.reproCostFraction
       expect(child?.energy).toBeCloseTo(expectedChildEnergy, 10)
     })
@@ -262,7 +321,7 @@ describe('processReproduction', () => {
       // AC3: parent keeps (1 - reproCostFraction) fraction
       const { entity, ledger } = makeReproducingParent(200)
       const rng = makeRng(7)
-      processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID, cfg.worldW, cfg.worldH)
       const expectedParentEnergy = 200 * (1 - cfg.species.herbivore.reproCostFraction)
       expect(entity.energy).toBeCloseTo(expectedParentEnergy, 10)
     })
@@ -271,7 +330,7 @@ describe('processReproduction', () => {
       // AC3 via ledger: ledger tracks parent's reduced balance
       const { entity, ledger } = makeReproducingParent(200)
       const rng = makeRng(7)
-      processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID, cfg.worldW, cfg.worldH)
       expect(ledger.get({ kind: 'entity', id: 1 })).toBeCloseTo(
         200 * (1 - cfg.species.herbivore.reproCostFraction),
         10,
@@ -284,7 +343,7 @@ describe('processReproduction', () => {
       // AC8: flag cleared so VM must set it again next tick
       const { entity, ledger } = makeReproducingParent(200)
       const rng = makeRng(7)
-      processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID, cfg.worldW, cfg.worldH)
       expect(entity.reproRequested).toBe(false)
     })
 
@@ -292,7 +351,7 @@ describe('processReproduction', () => {
       // AC8: cooldown anchor updated
       const { entity, ledger } = makeReproducingParent(200)
       const rng = makeRng(7)
-      processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID, cfg.worldW, cfg.worldH)
       expect(entity.lastReproTick).toBe(CURRENT_TICK)
     })
   })
@@ -303,7 +362,7 @@ describe('processReproduction', () => {
       const { entity, ledger } = makeReproducingParent(200)
       const rng = makeRng(7)
       const totalBefore = ledger.totalEnergy()
-      processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID)
+      processReproduction(entity, rng, ledger, cfg, CURRENT_TICK, CHILD_ID, cfg.worldW, cfg.worldH)
       expect(ledger.totalEnergy()).toBeCloseTo(totalBefore, 10)
     })
   })
@@ -313,9 +372,98 @@ describe('processReproduction', () => {
       // AC11: same seed → same tape
       const { entity: e1, ledger: l1 } = makeReproducingParent(200)
       const { entity: e2, ledger: l2 } = makeReproducingParent(200)
-      const child1 = processReproduction(e1, makeRng(7), l1, cfg, CURRENT_TICK, CHILD_ID)
-      const child2 = processReproduction(e2, makeRng(7), l2, cfg, CURRENT_TICK, CHILD_ID)
+      const child1 = processReproduction(
+        e1,
+        makeRng(7),
+        l1,
+        cfg,
+        CURRENT_TICK,
+        CHILD_ID,
+        cfg.worldW,
+        cfg.worldH,
+      )
+      const child2 = processReproduction(
+        e2,
+        makeRng(7),
+        l2,
+        cfg,
+        CURRENT_TICK,
+        CHILD_ID,
+        cfg.worldW,
+        cfg.worldH,
+      )
       expect(child1?.genome.tape).toEqual(child2?.genome.tape)
+    })
+  })
+
+  // Story 4.3 AC4.3.3 — child position offset
+  // Spec §6.1 ("small random offset"), §1 (torus wrap)
+  describe('child position offset', () => {
+    it('child position is not exactly equal to parent position', () => {
+      // AC1: offset must be applied — child is not at the exact same coordinates
+      const { entity, ledger } = makeReproducingParent(200)
+      const rng = makeRng(7)
+      const child = processReproduction(
+        entity,
+        rng,
+        ledger,
+        cfg,
+        CURRENT_TICK,
+        CHILD_ID,
+        cfg.worldW,
+        cfg.worldH,
+      )
+      const sameX = child?.position.x === entity.position.x
+      const sameY = child?.position.y === entity.position.y
+      expect(sameX && sameY).toBe(false)
+    })
+
+    it('child position is torus-wrapped within world bounds', () => {
+      // AC4: position.x in [0, worldW), position.y in [0, worldH)
+      const { entity, ledger } = makeReproducingParent(200)
+      const rng = makeRng(7)
+      const child = processReproduction(
+        entity,
+        rng,
+        ledger,
+        cfg,
+        CURRENT_TICK,
+        CHILD_ID,
+        cfg.worldW,
+        cfg.worldH,
+      )
+      expect(child?.position.x).toBeGreaterThanOrEqual(0)
+      expect(child?.position.x).toBeLessThan(cfg.worldW)
+      expect(child?.position.y).toBeGreaterThanOrEqual(0)
+      expect(child?.position.y).toBeLessThan(cfg.worldH)
+    })
+
+    it('child position is deterministic for the same rng seed', () => {
+      // AC3: same seed → same offset → same child position
+      const { entity: e1, ledger: l1 } = makeReproducingParent(200)
+      const { entity: e2, ledger: l2 } = makeReproducingParent(200)
+      const child1 = processReproduction(
+        e1,
+        makeRng(7),
+        l1,
+        cfg,
+        CURRENT_TICK,
+        CHILD_ID,
+        cfg.worldW,
+        cfg.worldH,
+      )
+      const child2 = processReproduction(
+        e2,
+        makeRng(7),
+        l2,
+        cfg,
+        CURRENT_TICK,
+        CHILD_ID,
+        cfg.worldW,
+        cfg.worldH,
+      )
+      expect(child1?.position.x).toBe(child2?.position.x)
+      expect(child1?.position.y).toBe(child2?.position.y)
     })
   })
 })
