@@ -37,6 +37,7 @@ This document is the authoritative answer to "what are we building." It does not
   ```
 
   where `wrapDelta(d, size)` returns `d - round(d / size) * size` (in `[-size/2, size/2]`).
+
 - All distance, direction, and sensing math must use this wrap-aware helper. No entity can "see" a target more than `min(WORLD_W, WORLD_H) / 2` units away, because anything further is closer from the other direction.
 
 ### 1.3 Orientation normalization
@@ -116,6 +117,7 @@ This means a creature's visible energy decreases over time even while idle, but 
 ### 2.6 Module responsibility
 
 `src/core/energy.ts` owns:
+
 - `EnergyPool` type
 - `transfer()` and the internal pool table
 - `totalEnergy()` and `assertEnergyConserved()`
@@ -208,6 +210,7 @@ onEat(eater, food, amountEatenThisTick):
 ```
 
 **Notes:**
+
 - The ledger `transfer` moves whole `amountEatenThisTick` into the eater. The efficiency split is an internal accounting move within the eater's entity pool — it does not go through the ledger because no energy leaves the pool.
 - When `food.energy` reaches zero:
   - If `food` is a *living entity*, it dies as predation. A corpse is created at its position containing any remaining energy (for carnivore kills this is zero; for gradual herbivore eating this is typically zero; the corpse creation path handles the zero case gracefully and may elide empty corpses for cleanliness).
@@ -235,6 +238,7 @@ All inheritable, all mutable. Defaults:
 | `initialEnergy` (at seeding) | 50 | 100 | 200 | 80 |
 
 **Notes on the table:**
+
 - `eatRate` for carnivores is set to a large finite value (not `Infinity`) so the unified eat function in §3.5 clamps naturally: `amountEatenThisTick = min(eatRate, food.energy)` reduces to `food.energy` for any prey smaller than 10000. Using a finite number keeps arithmetic and mutation drift well-defined.
 - `absorbRate` is plant-specific; mobile species have no direct soil access.
 - Plants have no `reproThresholdEnergy` or `reproCostFraction` because they do not use the standard reproduction rule (§3.1); they reproduce only via compost-adjacent spawning.
@@ -320,11 +324,13 @@ The "amount" is the full waste buffer, not just the threshold — otherwise wast
 ### 6.1 Birth
 
 Entities are created by:
+
 - Initial seeding (see Section 17)
 - Reproduction (Section 6.3)
 - Plant spawning near compost (Section 3.1)
 
 At birth, an entity gets:
+
 - Random position (for initial seeding) or parent's position (for reproduction; offspring is placed at parent's position plus a small random offset to avoid immediate collision)
 - `age = 0`
 - `lifespan` drawn from normal distribution around parent's `lifespan` (inherited with mutation)
@@ -345,6 +351,7 @@ This rule applies to **herbivores, carnivores, and decomposers** only. Plants re
 Reproduction is **genome-driven**: it only happens when the entity's genome executes a `REPRODUCE` opcode (§7.1) AND the eligibility conditions below are all satisfied. If the genome never emits `REPRODUCE`, the entity never reproduces — evolution has to discover reproduction timing as part of the learned behavior.
 
 **Eligibility conditions (all must hold when `REPRODUCE` executes):**
+
 1. `age >= maturityAge` (mature)
 2. `energy >= stats.reproThresholdEnergy` (well-fed)
 3. Reproduction cooldown has elapsed: `currentTick - lastReproTick >= REPRO_COOLDOWN_TICKS` (default 200)
@@ -352,6 +359,7 @@ Reproduction is **genome-driven**: it only happens when the entity's genome exec
 If any condition fails when `REPRODUCE` executes, the opcode is a no-op for that tick (no state change, no energy cost). The cooldown prevents runaway "reproduce every tick" strategies from escaping natural selection.
 
 **Reproduction process** (executed in step 9 of the tick loop for queued requests from this tick's VM step):
+
 1. Compute offspring energy: `offspringEnergy = parent.energy * stats.reproCostFraction`
 2. Create a new `entity` pool for the child: `transfer(parent, child, offspringEnergy)`
 3. Child inherits genome, stats, lifespan, maturityAge — each with mutation per §8
@@ -363,6 +371,7 @@ If any condition fails when `REPRODUCE` executes, the opcode is a no-op for that
 ### 6.4 Death
 
 Death causes:
+
 - **Starvation**: `energy <= 0`
 - **Old age**: `age >= lifespan`
 - **Predation**: killed by a predator (Section 3.3–3.5)
@@ -409,6 +418,7 @@ Nine opcodes total. `REPRODUCE` is a genome-driven action: when executed it *req
 ### 7.2 Initial genomes
 
 When an entity is created from scratch (not by reproduction):
+
 - `tape.length` chosen uniformly at random in `[6, 16]`
 - Each instruction is chosen with a **biased** distribution to ensure new entities have at least basic if-then reflexes *and* some reproductive drive:
   - 28% chance: a `SENSE_*` instruction (food, predator, mate — each at ~9.3%)
@@ -452,18 +462,21 @@ SENSE_FOOD(arg1, arg2):
 ```
 
 "Food-for-this-species":
+
 - Herbivore → plant
 - Carnivore → herbivore
 - Decomposer → corpse | poop
 - Plant → always returns "not detected" (plants don't eat, they absorb)
 
 "Predator-for-this-species":
+
 - Herbivore → carnivore
 - Carnivore → (nothing, apex) → always "not detected"
 - Decomposer → (nothing) → always "not detected"
 - Plant → always "not detected"
 
 "Mate-for-this-species":
+
 - Herbivore, carnivore, decomposer → another mature entity of the same species
 - Plant → always "not detected" (plants do not use mate sensing)
 
@@ -515,6 +528,7 @@ The `arg1` value (in `[0, 1]`) selects the condition via **disjoint bands**, so 
 (The original spec used raw angle sentinels — `>0`, `<0`, `==0`, undefined — as the condition selector. We canonicalize all genome args to `[0, 1]` reals for smooth mutation drift, and represent the four conditions as four equal-width bands. This is evolvable: a small arg-drift mutation can nudge a genome from "nothing detected" into "target is left" without needing to hit a specific exact value.)
 
 **Jump semantics:**
+
 - `JUMP_IF_TRUE`: if the selected condition holds, `ip = target mod tape.length`. Otherwise `ip` advances normally (`ip = (ip + 1) mod tape.length`).
 - `JUMP_IF_FALSE`: jumps if the selected condition does **not** hold; otherwise advances normally.
 
@@ -533,6 +547,7 @@ The `arg1` value (in `[0, 1]`) selects the condition via **disjoint bands**, so 
 ### 8.1 What is inherited
 
 On reproduction, the offspring inherits:
+
 - **Genome** — a *mutated copy* of the parent's genome (see 8.2)
 - **Stats** — a *mutated copy* of `stats` (see 8.3)
 - **Lifespan and maturity age** — drawn from a normal distribution around the parent's values; safeguarded (Section 6.1)
@@ -574,6 +589,7 @@ Two entities collide when `distance(a, b) < a.radius + b.radius` (using torus-aw
 ### 9.2 Resolution
 
 **Not a physics engine**, just a push-apart:
+
 1. Compute penetration depth `p = (a.radius + b.radius) - distance(a, b)`
 2. Compute unit normal from `a` to `b` (wrap-aware)
 3. Move each entity by `p/2` in opposite directions along the normal
@@ -584,6 +600,7 @@ Plants do not push — they are stationary. If a plant is involved, the other en
 ### 9.3 Interactions-on-contact
 
 Collision is also the trigger for:
+
 - Herbivore eating plant (contact starts gradual eating)
 - Carnivore attacking herbivore (contact = instant attack)
 - Decomposer eating corpse/poop (contact starts gradual eating)
@@ -606,6 +623,7 @@ One tick = one call to `sim.tick(dt)`. `dt` defaults to `1/30` second but is sca
 
 ```
 tick(dt):
+
   1. advance clock                — age++ for every living entity
   2. rebuild spatial index         — used by both sensing and physics
   3. genome VM step                — each entity executes one instruction (may set velocity, orientation, sense, or jump)
@@ -619,6 +637,7 @@ tick(dt):
  11. decay                         — corpses return energy to soil at CORPSE_DECAY_RATE; compost and poop do not decay (default)
  12. plant lifecycle               — plants absorb soil (compost-boosted), and compost-adjacent plant spawning (§3.1) runs here if auto-spawn is on
  13. invariant check (dev only)    — assertEnergyConserved, assertFinite
+
 ```
 
 ### 10.1 Why this order
@@ -701,6 +720,7 @@ bioforge/
 ```
 
 **Hard rules:**
+
 - `src/core/` never imports from `src/ui/`
 - `src/core/` never imports from `blessed` or any terminal library
 - `src/core/` never uses `Math.random` — always `rng.ts`
@@ -758,6 +778,7 @@ Non-ASCII glyphs (`♣`, `♦`, `■`) require a Unicode-capable terminal. A fal
 ### 13.4 Vision cone and sense indicator
 
 When an entity is selected, its vision cone and last sensed target are overlaid:
+
 - The cone: cells within `spread/2` of heading and within `range` distance are painted with a darker background (or a different bg color). Uses the `lastSense.spread` and `lastSense.range` from the entity's most recent sense execution.
 - The sight line: if `lastSense.detected`, draw a dashed line from entity to `(entity.position + normalized direction × lastSense.distance)` using Bresenham's line over the cell grid.
 
@@ -814,6 +835,7 @@ Target terminal size: **130 × 44 minimum**. Gracefully degrades on smaller (hid
 ### 14.2 Responsive behavior
 
 If terminal < 130 × 44:
+
 - First, hide the population chart (HUD still shows counts, which is enough for mid-density info)
 - If still too small, collapse the inspector to one line ("entity #N, species, IP")
 - Below ~100 × 30, show an error and suggest resizing
@@ -878,6 +900,7 @@ One `.test.ts` file per `src/core/` module (except `sim.ts` which has integratio
 ### 16.2 Integration tests
 
 `tests/sim.test.ts`:
+
 - Spin up a full sim with a seed and small entity counts, tick for 100 ticks, assert no crashes, all species still alive (or specific expected die-offs)
 - Spin up a sim with only plants, tick for 500 ticks, assert plant count stays in a reasonable band
 - Spin up a sim with no decomposers, tick for 1000 ticks, assert corpse count grows and soil does not recover
@@ -886,6 +909,7 @@ One `.test.ts` file per `src/core/` module (except `sim.ts` which has integratio
 ### 16.3 Invariant fuzz test
 
 `tests/energyConservation.test.ts`:
+
 - For each of 20 seeds, run a full sim for 5000 ticks
 - After every single tick, assert `totalEnergy === TOTAL_ENERGY` (within `ENERGY_EPSILON = 1e-6`, see §2.5)
 - After every single tick, assert every entity's position, velocity, energy, and wasteBuffer are `Number.isFinite`
@@ -895,6 +919,7 @@ One `.test.ts` file per `src/core/` module (except `sim.ts` which has integratio
 ### 16.4 Runtime guards (not tests, but cheap continuous checks)
 
 In dev mode (`NODE_ENV !== 'production'`):
+
 - After every `transfer()`, assert energy conservation
 - At the end of every `tick()`, assert all entity values are finite
 - If any assertion fails, throw with a descriptive message naming the offending entity/transfer/tick number

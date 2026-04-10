@@ -61,7 +61,7 @@ If any of these are false, the story is "draft" and cannot enter RED.
 
 ### 3.4 Flow
 
-```
+```text
 PO drafts story              -- stories/NN-slug.md
    |
 Lead reviews                 -- testability, sequencing, spec alignment
@@ -109,6 +109,7 @@ One full cycle implements **one** acceptance criterion. Multi-AC stories run mul
 **Goal**: write a test that expresses the desired behavior and currently fails.
 
 **Gates — RED is done when:**
+
 1. A new test file or new `it()` block exists
 2. `npx vitest run` shows the new test *failing with a meaningful assertion error* — not a compile error, not a crash, not a typo
 3. The failure message clearly points at the missing behavior
@@ -125,6 +126,7 @@ One full cycle implements **one** acceptance criterion. Multi-AC stories run mul
 **Goal**: make the RED test pass with the minimum viable code.
 
 **Gates — GREEN is done when:**
+
 1. The specific failing test from RED now passes
 2. All pre-existing tests still pass
 3. `tsc --noEmit` passes under strict config
@@ -142,6 +144,7 @@ One full cycle implements **one** acceptance criterion. Multi-AC stories run mul
 **Goal**: improve the code's clarity and structure without changing its behavior.
 
 **Allowed within PURPLE's scope:**
+
 - Rename variables, functions, types within a file
 - Extract or inline functions within a module
 - Remove duplication within the module being changed
@@ -150,6 +153,7 @@ One full cycle implements **one** acceptance criterion. Multi-AC stories run mul
 - Simplify logic
 
 **PURPLE must escalate to Lead before:**
+
 - Moving code between modules
 - Adding or removing a module/file
 - Changing any public export or type consumed by another module
@@ -159,6 +163,7 @@ One full cycle implements **one** acceptance criterion. Multi-AC stories run mul
 - Anything that feels like "this needs a bigger change"
 
 **Escalation procedure:**
+
 1. PURPLE stops the refactor
 2. Writes an escalation note: what it wants to change, why, alternatives considered
 3. Sends via task list / message to Lead
@@ -166,6 +171,7 @@ One full cycle implements **one** acceptance criterion. Multi-AC stories run mul
 5. PURPLE does not proceed until Lead has responded
 
 **Gates — PURPLE is done when:**
+
 1. All tests still pass — same count, same behavior
 2. `tsc --noEmit` passes
 3. ESLint passes with zero warnings
