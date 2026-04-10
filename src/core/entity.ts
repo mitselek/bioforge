@@ -10,6 +10,7 @@
 
 import type { Vec2 } from './world.js'
 import type { Species, SpeciesStats } from './config.js'
+import type { Genome } from './genome.js'
 
 // Branded numeric IDs. The brand prevents accidentally mixing entity ids
 // with corpse/poop/compost ids at the type level.
@@ -39,15 +40,6 @@ export const NO_SENSE: SenseResult = {
   detected: false,
   spread: 0,
   range: 0,
-}
-
-// Genome type — placeholder until Story 2.3 defines it properly.
-// For Story 2.2, makeEntity accepts an opaque Genome shape so the test
-// file can construct entities. Story 2.3 will replace this with the
-// real Instruction[] tape.
-export interface Genome {
-  readonly tape: readonly unknown[]
-  ip: number
 }
 
 export interface Entity {
