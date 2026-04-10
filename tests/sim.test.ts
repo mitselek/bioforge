@@ -322,3 +322,144 @@ describe('AC5.1.7 — 1000-tick crash-free multi-seed run', () => {
     }).not.toThrow()
   })
 })
+
+// ─── AC5.1.8 — state snapshot is read-only and includes required fields ───────
+
+describe('AC5.1.8 — sim.state provides a read-only snapshot', () => {
+  it('state.countsBySpecies reflects initial seeded counts', () => {
+    const rng = makeRng(cfg.seed)
+    const sim = makeSim(cfg, rng)
+    const { countsBySpecies } = sim.state
+    expect(countsBySpecies['plant']).toBe(cfg.initialCounts.plant)
+    expect(countsBySpecies['herbivore']).toBe(cfg.initialCounts.herbivore)
+    expect(countsBySpecies['carnivore']).toBe(cfg.initialCounts.carnivore)
+    expect(countsBySpecies['decomposer']).toBe(cfg.initialCounts.decomposer)
+  })
+
+  it('state.totalEnergy equals cfg.totalEnergy at tick 0', () => {
+    const rng = makeRng(cfg.seed)
+    const sim = makeSim(cfg, rng)
+    expect(sim.state.totalEnergy).toBeCloseTo(cfg.totalEnergy, 6)
+  })
+
+  it('state.tick is a number', () => {
+    const rng = makeRng(cfg.seed)
+    const sim = makeSim(cfg, rng)
+    expect(typeof sim.state.tick).toBe('number')
+  })
+
+  it('mutating the returned countsBySpecies object does not affect subsequent state reads', () => {
+    const rng = makeRng(cfg.seed)
+    const sim = makeSim(cfg, rng)
+    const snapshot = sim.state.countsBySpecies
+    // Attempt to mutate the snapshot — should not affect later reads
+    // (TypeScript prevents direct mutation via Readonly, but the test pins the
+    // runtime invariant that a fresh call to state returns independent data)
+    const plantCountBefore = sim.state.countsBySpecies['plant']
+    // Cast away readonly to test runtime isolation
+    const mutable = snapshot as Record<string, number>
+    mutable['plant'] = 9999
+    // A fresh .state call must return the real count, not 9999
+    expect(sim.state.countsBySpecies['plant']).toBe(plantCountBefore)
+  })
+
+  it('state.entities is the internal map reference (snapshot is live but read-only typed)', () => {
+    const rng = makeRng(cfg.seed)
+    const sim = makeSim(cfg, rng)
+    // Two consecutive reads of state.entities must refer to the same map
+    // (ReadonlyMap typed — the test confirms consistent identity)
+    const snap1 = sim.state.entities
+    const snap2 = sim.state.entities
+    expect(snap1).toBe(snap2)
+  })
+})
+
+// ─── AC5.1.9 — sim.reset() restores initial state deterministically ───────────
+
+describe('AC5.1.9 — sim.reset() restores tick 0, initial entity counts, initial totalEnergy', () => {
+  it('reset() restores tick to 0 after N ticks', () => {
+    const rng = makeRng(cfg.seed)
+    const sim = makeSim(cfg, rng)
+    sim.tick()
+    sim.tick()
+    sim.tick()
+    expect(sim.state.tick).toBe(3)
+    sim.reset()
+    expect(sim.state.tick).toBe(0)
+  })
+
+  it('reset() restores initial entity counts', () => {
+    const rng = makeRng(cfg.seed)
+    const sim = makeSim(cfg, rng)
+    const initialPlantCount = sim.state.countsBySpecies['plant'] ?? 0
+    // Run enough ticks that some entities die or are born
+    for (let i = 0; i < 50; i++) {
+      sim.tick()
+    }
+    sim.reset()
+    expect(sim.state.countsBySpecies['plant']).toBe(initialPlantCount)
+    expect(sim.state.countsBySpecies['herbivore']).toBe(cfg.initialCounts.herbivore)
+    expect(sim.state.countsBySpecies['carnivore']).toBe(cfg.initialCounts.carnivore)
+    expect(sim.state.countsBySpecies['decomposer']).toBe(cfg.initialCounts.decomposer)
+  })
+
+  it('reset() restores totalEnergy to cfg.totalEnergy', () => {
+    const rng = makeRng(cfg.seed)
+    const sim = makeSim(cfg, rng)
+    for (let i = 0; i < 20; i++) {
+      sim.tick()
+    }
+    sim.reset()
+    expect(sim.state.totalEnergy).toBeCloseTo(cfg.totalEnergy, 6)
+  })
+
+  it('N ticks from reset produce the same entity count as first N ticks (deterministic reset)', () => {
+    const rng = makeRng(cfg.seed)
+    const sim = makeSim(cfg, rng)
+    const N = 10
+
+    for (let i = 0; i < N; i++) {
+      sim.tick()
+    }
+    const countAfterFirstRun = sim.state.entities.size
+
+    sim.reset()
+    for (let i = 0; i < N; i++) {
+      sim.tick()
+    }
+    const countAfterSecondRun = sim.state.entities.size
+
+    expect(countAfterSecondRun).toBe(countAfterFirstRun)
+  })
+
+  it('N ticks from reset produce identical entity positions to first N ticks (deterministic reset)', () => {
+    const rng = makeRng(cfg.seed)
+    const sim = makeSim(cfg, rng)
+    const N = 5
+
+    for (let i = 0; i < N; i++) {
+      sim.tick()
+    }
+    // Snapshot positions after first run
+    const positionsAfterFirst = new Map<number, { x: number; y: number }>()
+    for (const [id, e] of sim.state.entities) {
+      positionsAfterFirst.set(id, { x: e.position.x, y: e.position.y })
+    }
+
+    sim.reset()
+    for (let i = 0; i < N; i++) {
+      sim.tick()
+    }
+
+    // Entity IDs and positions must match
+    expect(sim.state.entities.size).toBe(positionsAfterFirst.size)
+    for (const [id, pos] of positionsAfterFirst) {
+      const e = sim.state.entities.get(id)
+      expect(e).toBeDefined()
+      if (e !== undefined) {
+        expect(e.position.x).toBeCloseTo(pos.x, 8)
+        expect(e.position.y).toBeCloseTo(pos.y, 8)
+      }
+    }
+  })
+})

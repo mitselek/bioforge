@@ -32,10 +32,13 @@ import { torusDistance } from './world.js'
 export interface SimState {
   readonly tick: number
   readonly entities: ReadonlyMap<number, Entity>
+  readonly countsBySpecies: Readonly<Record<string, number>>
+  readonly totalEnergy: number
 }
 
 export interface Sim {
   tick(): void
+  reset(): void
   assertEnergyConserved(): void
   assertFinite(): void
   readonly state: SimState
@@ -93,7 +96,11 @@ export function makeSim(cfg: Config, rng: Rng): Sim {
 
   return {
     get state(): SimState {
-      return { tick: currentTick, entities }
+      const countsBySpecies: Record<string, number> = {}
+      for (const entity of entities.values()) {
+        countsBySpecies[entity.species] = (countsBySpecies[entity.species] ?? 0) + 1
+      }
+      return { tick: currentTick, entities, countsBySpecies, totalEnergy: ledger.totalEnergy() }
     },
 
     tick(): void {
@@ -284,6 +291,9 @@ export function makeSim(cfg: Config, rng: Rng): Sim {
       ledger.assertFinite()
     },
 
+    reset(): void {
+      throw new Error('reset not implemented')
+    },
     assertEnergyConserved(): void {
       ledger.assertEnergyConserved()
     },
