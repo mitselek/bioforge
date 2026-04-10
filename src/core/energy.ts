@@ -30,6 +30,8 @@ export interface Ledger {
   register(pool: EnergyPool, initialAmount: number): void
   unregister(pool: EnergyPool): void
   transfer(from: EnergyPool, to: EnergyPool, amount: number): void
+  assertEnergyConserved(): void
+  assertFinite(): void
 }
 
 const poolKey = (p: EnergyPool): string =>
@@ -98,6 +100,12 @@ export function makeLedger(opts: LedgerOptions): Ledger {
       }
       balances.set(fromKey, fromBal - amount)
       balances.set(toKey, toBal + amount)
+    },
+    assertEnergyConserved(): void {
+      throw new Error('energy.assertEnergyConserved: not implemented')
+    },
+    assertFinite(): void {
+      throw new Error('energy.assertFinite: not implemented')
     },
   }
 }
