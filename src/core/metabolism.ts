@@ -22,7 +22,11 @@ import type { Ledger } from './energy.js'
  * @stub — implementation pending GREEN phase
  */
 export function applyMetabolism(entity: Entity, dt: number, ledger: Ledger): void {
-  throw new Error(
-    `applyMetabolism not implemented: entity=${String(entity.id)} dt=${String(dt)} ledger=${typeof ledger}`,
-  )
+  const cost = entity.stats.baseMetabolicRate * dt
+  const actual = Math.min(cost, entity.energy)
+  if (actual > 0) {
+    ledger.transfer({ kind: 'entity', id: entity.id }, { kind: 'soil' }, actual)
+    entity.energy -= actual
+  }
+  entity.age += 1
 }
