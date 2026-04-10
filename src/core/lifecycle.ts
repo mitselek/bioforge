@@ -6,11 +6,13 @@
  * See docs/superpowers/specs/2026-04-10-bioforge-design.md §5.3, §4.1, §6.3, §6.4.
  */
 
+import { makeEntity } from './entity.js'
 import type { Entity, EntityId } from './entity.js'
 import type { Ledger } from './energy.js'
 import type { DeadMatterRegistry, Corpse } from './deadMatter.js'
 import type { Config } from './config.js'
 import type { Rng } from './rng.js'
+import { mutateGenome, mutateStats } from './genome.js'
 
 export interface DeathResult {
   readonly died: boolean
@@ -81,7 +83,35 @@ export function processReproduction(
   currentTick: number,
   childId: EntityId,
 ): Entity | null {
-  throw new Error(
-    `processReproduction not implemented: entity=${String(entity.id)} rng=${typeof rng} ledger=${typeof ledger} cfg=${typeof cfg} currentTick=${String(currentTick)} childId=${String(childId)}`,
+  if (!entity.reproRequested) return null
+
+  const childEnergy = entity.energy * entity.stats.reproCostFraction
+  ledger.register({ kind: 'entity', id: childId }, 0)
+  ledger.transfer({ kind: 'entity', id: entity.id }, { kind: 'entity', id: childId }, childEnergy)
+  entity.energy -= childEnergy
+
+  const lifespan = Math.max(1, rng.gaussian(entity.lifespan, entity.stats.lifespanStddev))
+  const maturityAge = Math.min(
+    Math.max(0, rng.gaussian(entity.maturityAge, entity.stats.maturityAgeStddev)),
+    lifespan - cfg.minReproWindow - 1,
   )
+  const childGenome = mutateGenome(rng, entity.genome, cfg)
+  const childStats = mutateStats(rng, entity.stats, cfg)
+
+  const child = makeEntity({
+    id: childId,
+    species: entity.species,
+    position: entity.position,
+    orientation: entity.orientation,
+    energy: childEnergy,
+    lifespan,
+    maturityAge,
+    genome: childGenome,
+    stats: childStats,
+  })
+
+  entity.reproRequested = false
+  entity.lastReproTick = currentTick
+
+  return child
 }
