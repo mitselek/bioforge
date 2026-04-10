@@ -5,7 +5,7 @@
  * pools in the energy ledger, and exposes a `tick()` method and a read-only
  * `state` snapshot.
  *
- * Story 5.1 implements AC5.1.1-7.
+ * Story 5.1 implements AC5.1.1-9.
  *
  * See docs/superpowers/specs/2026-04-10-bioforge-design.md §10, §17, §2.
  */
@@ -45,12 +45,7 @@ export interface Sim {
   readonly state: SimState
 }
 
-/**
- * Create a new simulation seeded from `cfg` using `rng` for all stochastic
- * decisions.
- *
- * Story 5.1 AC5.1.1-7. Spec §10, §17, §2.
- */
+/** Seed the initial entity map, ledger, and ID counter from config + rng. */
 function seedState(
   cfg: Config,
   seedRng: Rng,
@@ -95,6 +90,12 @@ function seedState(
   return { entities, ledger, nextId }
 }
 
+/**
+ * Create a new simulation seeded from `cfg` using `rng` for all stochastic
+ * decisions.
+ *
+ * Story 5.1 AC5.1.1-9. Spec §10, §17, §2.
+ */
 export function makeSim(cfg: Config, rng: Rng): Sim {
   let { entities, ledger, nextId } = seedState(cfg, rng)
   let tickRng: Rng = rng
