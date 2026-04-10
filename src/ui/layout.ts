@@ -14,7 +14,7 @@
  * See docs/superpowers/specs/2026-04-10-bioforge-design.md §14.
  */
 
-import * as blessed from 'blessed'
+import blessed from 'blessed'
 import type { Widgets } from 'blessed'
 
 export interface Layout {
