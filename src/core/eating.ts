@@ -24,8 +24,6 @@ import type { Config } from './config.js'
  * wasteBuffer) until waste deposition drops it as poop/compost.
  *
  * Story 4.4 AC1. Spec §3.5, §3.6, §2.
- *
- * @stub — implementation pending GREEN phase
  */
 export function applyEating(
   predator: Entity,
