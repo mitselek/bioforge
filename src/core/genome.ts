@@ -55,11 +55,30 @@ export function mutateGenome(rng: Rng, parent: Genome, cfg: Config): Genome {
   const tape: Instruction[] = parent.tape.map((inst) => mutateInstruction(rng, inst, cfg))
 
   // Op-swap pass: per-tape single-index swap at probability
-  // cfg.mutationRates.opSwap. Fresh opcode + fresh args via the same
-  // shape-aware switch as makeUniformRandomInstruction.
+  // cfg.mutationRates.opSwap. Picks an opcode DIFFERENT from the
+  // original (BB fix — spec §8.2 strict "a different random opcode").
   if (tape.length > 0 && rng.float() < cfg.mutationRates.opSwap) {
     const idx = rng.intInRange(0, tape.length - 1)
-    tape[idx] = makeUniformRandomInstruction(rng, tape.length)
+    const old = tape[idx]
+    if (old !== undefined) {
+      tape[idx] = swapInstruction(rng, old, tape.length)
+    }
+  }
+
+  // Insertion: per-tape rate from mutationRates.insert. Inserts a
+  // biased-random instruction at a random position. Capped at
+  // maxTapeLength.
+  if (rng.float() < cfg.mutationRates.insert && tape.length < cfg.maxTapeLength) {
+    const insertIdx = rng.intInRange(0, tape.length)
+    const newInst = makeRandomInstruction(rng, tape.length + 1)
+    tape.splice(insertIdx, 0, newInst)
+  }
+
+  // Deletion: per-tape rate from mutationRates.delete. Removes an
+  // instruction at a random position. Floored at minTapeLength.
+  if (rng.float() < cfg.mutationRates.delete && tape.length > cfg.minTapeLength) {
+    const deleteIdx = rng.intInRange(0, tape.length - 1)
+    tape.splice(deleteIdx, 1)
   }
 
   return { tape, ip: 0 }
@@ -91,6 +110,40 @@ function mutateInstruction(rng: Rng, inst: Instruction, cfg: Config): Instructio
     case 'JUMP_IF_TRUE':
     case 'JUMP_IF_FALSE':
       return { op: inst.op, arg1: driftArg(inst.arg1), target: inst.target }
+  }
+}
+
+function swapInstruction(rng: Rng, old: Instruction, tapeLength: number): Instruction {
+  const opcodes = [
+    'MOVE_FORWARD',
+    'TURN_LEFT',
+    'TURN_RIGHT',
+    'SENSE_FOOD',
+    'SENSE_PREDATOR',
+    'SENSE_MATE',
+    'JUMP_IF_TRUE',
+    'JUMP_IF_FALSE',
+    'REPRODUCE',
+  ] as const
+  // Rejection sampling: pick until we get a different opcode. With 9
+  // opcodes and 1 forbidden, rejection probability is 1/9 per attempt.
+  let op: (typeof opcodes)[number]
+  do {
+    op = rng.pick(opcodes)
+  } while (op === old.op)
+  switch (op) {
+    case 'MOVE_FORWARD':
+    case 'TURN_LEFT':
+    case 'TURN_RIGHT':
+    case 'REPRODUCE':
+      return { op, arg1: rng.float() }
+    case 'SENSE_FOOD':
+    case 'SENSE_PREDATOR':
+    case 'SENSE_MATE':
+      return { op, arg1: rng.float(), arg2: rng.float() }
+    case 'JUMP_IF_TRUE':
+    case 'JUMP_IF_FALSE':
+      return { op, arg1: rng.float(), target: rng.intInRange(0, tapeLength - 1) }
   }
 }
 
@@ -170,7 +223,31 @@ function makeUniformRandomInstruction(rng: Rng, tapeLength: number): Instruction
 }
 
 export function mutateStats(rng: Rng, parent: SpeciesStats, cfg: Config): SpeciesStats {
-  throw new Error(
-    `genome.mutateStats: not implemented (parentMaxSpeed=${String(parent.maxSpeed)} statDrift=${String(cfg.mutationRates.statDrift)} rngFloat=${typeof rng.float})`,
-  )
+  // Lognormal drift: value * exp(Gaussian(0, sigma)). Positive values
+  // stay positive, drift is symmetric in log space. Each stat gets an
+  // independent driftFactor() call.
+  const driftFactor = (): number => {
+    if (rng.float() >= cfg.mutationRates.statDrift) return 1.0
+    return Math.exp(rng.gaussian(0, cfg.mutationRates.statDriftSigma))
+  }
+  const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v))
+
+  return {
+    radius: parent.radius * driftFactor(),
+    maxSpeed: parent.maxSpeed * driftFactor(),
+    baseMetabolicRate: parent.baseMetabolicRate * driftFactor(),
+    moveCostLinear: parent.moveCostLinear * driftFactor(),
+    moveCostQuadratic: parent.moveCostQuadratic * driftFactor(),
+    eatRate: parent.eatRate * driftFactor(),
+    absorbRate: parent.absorbRate * driftFactor(),
+    efficiency: clamp(parent.efficiency * driftFactor(), 0.1, 0.99),
+    lifespanMean: parent.lifespanMean * driftFactor(),
+    lifespanStddev: parent.lifespanStddev * driftFactor(),
+    maturityAgeMean: parent.maturityAgeMean * driftFactor(),
+    maturityAgeStddev: parent.maturityAgeStddev * driftFactor(),
+    reproThresholdEnergy: parent.reproThresholdEnergy * driftFactor(),
+    reproCostFraction: parent.reproCostFraction * driftFactor(),
+    initialEnergy: parent.initialEnergy * driftFactor(),
+    maxSenseRange: parent.maxSenseRange * driftFactor(),
+  }
 }
