@@ -55,8 +55,6 @@ export function renderHud(simState: SimState, cfg: Config): string[] {
   const poop = 0
   const compost = 0
 
-  void cfg
-
   return [
     `Tick:      ${String(simState.tick).padStart(8)}`,
     `Speed:     ${fmt(cfg.baseHz, 1, 7)} Hz`,
