@@ -13,6 +13,7 @@ import type { DeadMatterRegistry, Corpse } from './deadMatter.js'
 import type { Config } from './config.js'
 import type { Rng } from './rng.js'
 import { mutateGenome, mutateStats } from './genome.js'
+import { wrapPosition } from './world.js'
 
 export interface DeathResult {
   readonly died: boolean
@@ -98,15 +99,19 @@ export function processReproduction(
   const childGenome = mutateGenome(rng, entity.genome, cfg)
   const childStats = mutateStats(rng, entity.stats, cfg)
 
-  // TODO Story 4.3 AC4.3.3: apply small random offset to position, torus-wrapped
-  // worldW and worldH are reserved for this offset computation (GREEN phase)
-  void worldW
-  void worldH
+  const childPosition = wrapPosition(
+    {
+      x: entity.position.x + rng.floatInRange(-1, 1),
+      y: entity.position.y + rng.floatInRange(-1, 1),
+    },
+    worldW,
+    worldH,
+  )
 
   const child = makeEntity({
     id: childId,
     species: entity.species,
-    position: entity.position,
+    position: childPosition,
     orientation: entity.orientation,
     energy: childEnergy,
     lifespan,
