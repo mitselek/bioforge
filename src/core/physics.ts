@@ -45,9 +45,13 @@ export function applyMovement(entity: Entity, dt: number, worldW: number, worldH
  * @stub — implementation pending GREEN phase
  */
 export function applyMovementCost(entity: Entity, dt: number, ledger: Ledger): void {
-  throw new Error(
-    `applyMovementCost not implemented: entity=${String(entity.id)} dt=${String(dt)} ledger=${typeof ledger}`,
-  )
+  const { x, y } = entity.velocity
+  const speed = Math.sqrt(x * x + y * y)
+  if (speed === 0) return
+  const cost =
+    (entity.stats.moveCostLinear * speed + entity.stats.moveCostQuadratic * speed * speed) * dt
+  ledger.transfer({ kind: 'entity', id: entity.id }, { kind: 'soil' }, cost)
+  entity.energy -= cost
 }
 
 export function makeSpatialIndex(worldW: number, worldH: number, cellSize: number): SpatialIndex {
