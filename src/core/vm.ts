@@ -6,9 +6,21 @@
 
 import type { Entity } from './entity.js'
 import type { Config } from './config.js'
+import type { SpatialIndex } from './physics.js'
+import type { Species } from './config.js'
 import { normalizeAngle } from './world.js'
 
-export function executeOne(entity: Entity, dt: number, cfg: Config): void {
+export interface VmContext {
+  readonly cfg: Config
+  readonly index: SpatialIndex
+  readonly getEntity: (
+    id: number,
+  ) => { species: Species; position: { readonly x: number; readonly y: number } } | undefined
+  readonly worldW: number
+  readonly worldH: number
+}
+
+export function executeOne(entity: Entity, dt: number, ctx: VmContext): void {
   const { genome } = entity
   const inst = genome.tape[genome.ip]
   if (inst === undefined) {
@@ -29,23 +41,27 @@ export function executeOne(entity: Entity, dt: number, cfg: Config): void {
     }
     case 'TURN_LEFT': {
       if (entity.species === 'plant') break
-      entity.orientation = normalizeAngle(entity.orientation - inst.arg1 * cfg.turnRate * dt)
+      entity.orientation = normalizeAngle(entity.orientation - inst.arg1 * ctx.cfg.turnRate * dt)
       break
     }
     case 'TURN_RIGHT': {
       if (entity.species === 'plant') break
-      entity.orientation = normalizeAngle(entity.orientation + inst.arg1 * cfg.turnRate * dt)
+      entity.orientation = normalizeAngle(entity.orientation + inst.arg1 * ctx.cfg.turnRate * dt)
       break
     }
     case 'SENSE_FOOD':
     case 'SENSE_PREDATOR':
     case 'SENSE_MATE':
-      // Cycle 2
-      break
+      // Cycle 2 — stub: not yet implemented
+      throw new Error(
+        `vm.executeOne: SENSE not implemented (op=${inst.op} species=${entity.species})`,
+      )
     case 'JUMP_IF_TRUE':
     case 'JUMP_IF_FALSE':
-      // Cycle 2
-      break
+      // Cycle 2 — stub: not yet implemented
+      throw new Error(
+        `vm.executeOne: JUMP not implemented (op=${inst.op} arg1=${String(inst.arg1)})`,
+      )
     case 'REPRODUCE':
       // Cycle 3
       break
