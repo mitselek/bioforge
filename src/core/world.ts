@@ -28,11 +28,20 @@ export function torusDistance(a: Vec2, b: Vec2, worldW: number, worldH: number):
 }
 
 export function torusBearing(from: Vec2, to: Vec2, worldW: number, worldH: number): number {
-  throw new Error(
-    `world.torusBearing: not implemented (from=${String(from.x)},${String(from.y)} to=${String(to.x)},${String(to.y)} worldW=${String(worldW)} worldH=${String(worldH)})`,
-  )
+  const dx = wrapDelta(to.x - from.x, worldW)
+  const dy = wrapDelta(to.y - from.y, worldH)
+  return Math.atan2(dy, dx)
 }
 
 export function normalizeAngle(a: number): number {
-  throw new Error(`world.normalizeAngle: not implemented (a=${String(a)})`)
+  // JS `%` is sign-preserving (a - trunc(a/TAU)*TAU), so r ∈ (-TAU, TAU).
+  // At the ±π boundary the sign of `a` is preserved, which is what the tests
+  // pin: normalizeAngle(3π) === +π and normalizeAngle(-3π) === -π.
+  // Spec §1.3 forbids `while`-loop normalization because it freezes on huge
+  // inputs; the single `%` + at-most-one branch runs in constant time.
+  const TAU = 2 * Math.PI
+  let r = a % TAU
+  if (r > Math.PI) r -= TAU
+  else if (r < -Math.PI) r += TAU
+  return r
 }
