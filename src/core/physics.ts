@@ -7,7 +7,7 @@
  * See docs/superpowers/specs/2026-04-10-bioforge-design.md §9.4.
  */
 
-import { wrap } from './world.js'
+import { wrap, wrapDelta, wrapPosition, torusDistance } from './world.js'
 import type { Entity } from './entity.js'
 import type { Ledger } from './energy.js'
 
@@ -70,9 +70,63 @@ export function resolveCollisions(
   worldW: number,
   worldH: number,
 ): void {
-  throw new Error(
-    `resolveCollisions not implemented: entities=${String(entities.size)} worldW=${String(worldW)} worldH=${String(worldH)} spatialIndex=${typeof spatialIndex}`,
-  )
+  let maxRadius = 0
+  for (const e of entities.values()) {
+    if (e.stats.radius > maxRadius) maxRadius = e.stats.radius
+  }
+
+  for (const [idA, entityA] of entities) {
+    const queryR = entityA.stats.radius + maxRadius
+    for (const idB of spatialIndex.queryRadius(entityA.position, queryR)) {
+      if (idB <= idA) continue
+      const entityB = entities.get(idB)
+      if (entityB === undefined) continue
+
+      const dist = torusDistance(entityA.position, entityB.position, worldW, worldH)
+      const sumR = entityA.stats.radius + entityB.stats.radius
+      if (dist >= sumR || dist === 0) continue
+
+      const overlap = sumR - dist
+      const dx = wrapDelta(entityB.position.x - entityA.position.x, worldW)
+      const dy = wrapDelta(entityB.position.y - entityA.position.y, worldH)
+      const nx = dx / dist
+      const ny = dy / dist
+
+      const aIsPlant = entityA.species === 'plant'
+      const bIsPlant = entityB.species === 'plant'
+
+      if (aIsPlant) {
+        entityB.position = wrapPosition(
+          { x: entityB.position.x + nx * overlap, y: entityB.position.y + ny * overlap },
+          worldW,
+          worldH,
+        )
+      } else if (bIsPlant) {
+        entityA.position = wrapPosition(
+          { x: entityA.position.x - nx * overlap, y: entityA.position.y - ny * overlap },
+          worldW,
+          worldH,
+        )
+      } else {
+        entityA.position = wrapPosition(
+          {
+            x: entityA.position.x - nx * (overlap / 2),
+            y: entityA.position.y - ny * (overlap / 2),
+          },
+          worldW,
+          worldH,
+        )
+        entityB.position = wrapPosition(
+          {
+            x: entityB.position.x + nx * (overlap / 2),
+            y: entityB.position.y + ny * (overlap / 2),
+          },
+          worldW,
+          worldH,
+        )
+      }
+    }
+  }
 }
 
 export function makeSpatialIndex(worldW: number, worldH: number, cellSize: number): SpatialIndex {
