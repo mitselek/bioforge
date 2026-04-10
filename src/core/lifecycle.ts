@@ -30,8 +30,6 @@ export interface DeathResult {
  * - Zero-energy corpses are elided (spec §4.1)
  *
  * Story 4.3 AC1. Spec §5.3, §4.1, §2.5, §2.
- *
- * @stub — implementation pending GREEN phase
  */
 export function checkDeath(
   entity: Entity,
