@@ -28,9 +28,10 @@ export interface SpatialIndex {
  * @stub — implementation pending GREEN phase
  */
 export function applyMovement(entity: Entity, dt: number, worldW: number, worldH: number): void {
-  throw new Error(
-    `applyMovement not implemented: entity=${String(entity.id)} dt=${String(dt)} worldW=${String(worldW)} worldH=${String(worldH)}`,
-  )
+  const newX = wrap(entity.position.x + entity.velocity.x * dt, worldW)
+  const newY = wrap(entity.position.y + entity.velocity.y * dt, worldH)
+  entity.position = { x: newX, y: newY }
+  entity.velocity = { x: 0, y: 0 }
 }
 
 export function makeSpatialIndex(worldW: number, worldH: number, cellSize: number): SpatialIndex {
