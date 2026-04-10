@@ -47,9 +47,51 @@ export function randomGenome(rng: Rng, cfg: Config): Genome {
 }
 
 export function mutateGenome(rng: Rng, parent: Genome, cfg: Config): Genome {
-  throw new Error(
-    `genome.mutateGenome: not implemented (parentLen=${String(parent.tape.length)} argDrift=${String(cfg.mutationRates.argDrift)} opSwap=${String(cfg.mutationRates.opSwap)} rngFloat=${typeof rng.float})`,
-  )
+  // Deep-copy by mapping each instruction to a fresh object literal. The
+  // parent-immutability test pins that parent.tape and its contents must
+  // remain byte-identical across the call. Instructions are typed
+  // `readonly` so they can't be mutated in place, but parent.tape itself
+  // is mutable — rebuild the array eagerly.
+  const tape: Instruction[] = parent.tape.map((inst) => mutateInstruction(rng, inst, cfg))
+
+  // Op-swap pass: per-tape single-index swap at probability
+  // cfg.mutationRates.opSwap. Fresh opcode + fresh args via the same
+  // shape-aware switch as makeUniformRandomInstruction.
+  if (tape.length > 0 && rng.float() < cfg.mutationRates.opSwap) {
+    const idx = rng.intInRange(0, tape.length - 1)
+    tape[idx] = makeUniformRandomInstruction(rng, tape.length)
+  }
+
+  return { tape, ip: 0 }
+}
+
+function mutateInstruction(rng: Rng, inst: Instruction, cfg: Config): Instruction {
+  // Arg drift: per-instruction probability cfg.mutationRates.argDrift.
+  // When it fires, nudge each arg by Gaussian(0, argDriftSigma) and
+  // clamp to [0, 1]. JUMP_IF_* targets are kept stable under arg drift;
+  // target mutation is handled by op-swap / insertion / deletion.
+  if (rng.float() >= cfg.mutationRates.argDrift) {
+    return inst
+  }
+  const sigma = cfg.mutationRates.argDriftSigma
+  const driftArg = (a: number): number => {
+    const drifted = a + rng.gaussian(0, sigma)
+    return Math.min(1, Math.max(0, drifted))
+  }
+  switch (inst.op) {
+    case 'MOVE_FORWARD':
+    case 'TURN_LEFT':
+    case 'TURN_RIGHT':
+    case 'REPRODUCE':
+      return { op: inst.op, arg1: driftArg(inst.arg1) }
+    case 'SENSE_FOOD':
+    case 'SENSE_PREDATOR':
+    case 'SENSE_MATE':
+      return { op: inst.op, arg1: driftArg(inst.arg1), arg2: driftArg(inst.arg2) }
+    case 'JUMP_IF_TRUE':
+    case 'JUMP_IF_FALSE':
+      return { op: inst.op, arg1: driftArg(inst.arg1), target: inst.target }
+  }
 }
 
 function makeRandomInstruction(rng: Rng, tapeLength: number): Instruction {
