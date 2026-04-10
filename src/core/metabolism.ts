@@ -30,22 +30,28 @@ export function checkWasteDrop(
 ): Poop | Compost | null {
   if (entity.wasteBuffer < cfg.poopThreshold) return null
 
-  const amount = entity.wasteBuffer
+  const available = ledger.get({ kind: 'entity', id: entity.id })
+  const dropAmount = Math.min(entity.wasteBuffer, available)
+  if (dropAmount <= 0) return null
 
   if (entity.species === 'decomposer') {
-    const compost = deadMatter.addCompost(entity.position, amount)
+    const compost = deadMatter.addCompost(entity.position, dropAmount)
     ledger.register({ kind: 'compost', id: compost.id }, 0)
-    ledger.transfer({ kind: 'entity', id: entity.id }, { kind: 'compost', id: compost.id }, amount)
-    entity.energy -= amount
-    entity.wasteBuffer = 0
+    ledger.transfer(
+      { kind: 'entity', id: entity.id },
+      { kind: 'compost', id: compost.id },
+      dropAmount,
+    )
+    entity.energy -= dropAmount
+    entity.wasteBuffer -= dropAmount
     return compost
   }
 
-  const poop = deadMatter.addPoop(entity.position, amount)
+  const poop = deadMatter.addPoop(entity.position, dropAmount)
   ledger.register({ kind: 'poop', id: poop.id }, 0)
-  ledger.transfer({ kind: 'entity', id: entity.id }, { kind: 'poop', id: poop.id }, amount)
-  entity.energy -= amount
-  entity.wasteBuffer = 0
+  ledger.transfer({ kind: 'entity', id: entity.id }, { kind: 'poop', id: poop.id }, dropAmount)
+  entity.energy -= dropAmount
+  entity.wasteBuffer -= dropAmount
   return poop
 }
 

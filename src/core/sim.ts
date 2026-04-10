@@ -83,7 +83,11 @@ function seedState(
     }
   }
   const soilEnergy = cfg.totalEnergy - totalLiving
-  const ledger = makeLedger({ totalEnergy: cfg.totalEnergy, initialSoil: soilEnergy })
+  const ledger = makeLedger({
+    totalEnergy: cfg.totalEnergy,
+    initialSoil: soilEnergy,
+    epsilon: cfg.energyEpsilon,
+  })
   for (const entity of entities.values()) {
     ledger.register({ kind: 'entity', id: entity.id }, entity.energy)
   }

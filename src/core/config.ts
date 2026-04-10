@@ -163,7 +163,7 @@ export function defaultConfig(): Config {
     initialTapeLengthMax: 16,
     turnRate: Math.PI,
     autoSpawnPlants: true,
-    energyEpsilon: 1e-6,
+    energyEpsilon: 1e-5,
     mutationRates: {
       argDrift: 0.1,
       argDriftSigma: 0.05,
