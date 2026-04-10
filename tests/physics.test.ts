@@ -150,12 +150,12 @@ describe('applyMovement', () => {
   })
 
   it('wraps position via torus when entity crosses east edge', () => {
-    // AC2: entity at x=79.9, velocity {x:1.2, y:0}, dt=1/30 → wraps near x=0
-    const entity = makeHerbivore(79.9, 15, 1.2, 0)
+    // AC2: entity at x=79.99, velocity {x:1.2, y:0}, dt=1/30
+    // raw = 79.99 + 1.2/30 ≈ 80.03 → wraps to ≈ 0.03
+    const entity = makeHerbivore(79.99, 15, 1.2, 0)
     const dt = 1 / 30
     applyMovement(entity, dt, cfg.worldW, cfg.worldH)
-    // Expected: (79.9 + 1.2/30) % 80 ≈ 79.94 - 80 → near 0
-    const expected = (((79.9 + 1.2 * dt) % cfg.worldW) + cfg.worldW) % cfg.worldW
+    const expected = (((79.99 + 1.2 * dt) % cfg.worldW) + cfg.worldW) % cfg.worldW
     expect(entity.position.x).toBeCloseTo(expected, 10)
     expect(entity.position.x).toBeLessThan(1) // definitely wrapped
   })
