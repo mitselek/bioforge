@@ -12,15 +12,6 @@ import type { DeadMatterRegistry, Poop, Compost } from './deadMatter.js'
 import type { Config } from './config.js'
 
 /**
- * Apply one tick of base metabolism to an entity.
- *
- * Transfers `baseMetabolicRate * dt` from the entity pool to soil via the
- * ledger, clamped to the entity's available energy. Increments `entity.age`
- * by 1.
- *
- * Story 4.2 AC1. Spec §5.1, §5.2, §6.2.
- */
-/**
  * Check if entity's wasteBuffer has reached the drop threshold and, if so,
  * deposit it as poop (non-decomposers) or compost (decomposers).
  *
@@ -58,6 +49,15 @@ export function checkWasteDrop(
   return poop
 }
 
+/**
+ * Apply one tick of base metabolism to an entity.
+ *
+ * Transfers `baseMetabolicRate * dt` from the entity pool to soil via the
+ * ledger, clamped to the entity's available energy. Increments `entity.age`
+ * by 1.
+ *
+ * Story 4.2 AC1. Spec §5.1, §5.2, §6.2.
+ */
 export function applyMetabolism(entity: Entity, dt: number, ledger: Ledger): void {
   const cost = entity.stats.baseMetabolicRate * dt
   const actual = Math.min(cost, entity.energy)
