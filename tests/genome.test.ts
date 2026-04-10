@@ -90,4 +90,58 @@ describe('genome', () => {
       expect(same).toBe(false)
     })
   })
+
+  describe('distribution bias (spec §7.2)', () => {
+    it('matches the per-opcode expected percentages within ±2%', () => {
+      // Generate ~5500 instructions and count opcode occurrences.
+      // 500 seeds × ~11 instructions per genome ≈ 5500 samples. Standard
+      // error for p≈0.1 is sqrt(p(1-p)/5500) ≈ 0.4%. A ±2% tolerance is
+      // ~5σ — very safe margin above sampling noise.
+      const cfg = defaultConfig()
+      const counts: Record<string, number> = {
+        MOVE_FORWARD: 0,
+        TURN_LEFT: 0,
+        TURN_RIGHT: 0,
+        SENSE_FOOD: 0,
+        SENSE_PREDATOR: 0,
+        SENSE_MATE: 0,
+        JUMP_IF_TRUE: 0,
+        JUMP_IF_FALSE: 0,
+        REPRODUCE: 0,
+      }
+
+      let total = 0
+      for (let seed = 1; seed <= 500; seed++) {
+        const rng = makeRng(seed)
+        const g = randomGenome(rng, cfg)
+        for (const inst of g.tape) {
+          counts[inst.op] = (counts[inst.op] ?? 0) + 1
+          total++
+        }
+      }
+
+      // Expected percentages = biased band + 1/9 of the 10% uniform mix:
+      //  SENSE_*:        28/3 + 10/9 ≈ 10.44%
+      //  JUMP_IF_*:       9   + 10/9 ≈ 10.11%
+      //  MOVE_FORWARD:   18   + 10/9 ≈ 19.11%
+      //  TURN_LEFT/RIGHT: 9   + 10/9 ≈ 10.11%
+      //  REPRODUCE:       8   + 10/9 ≈  9.11%
+      const expected: Record<string, number> = {
+        SENSE_FOOD: 0.1044,
+        SENSE_PREDATOR: 0.1044,
+        SENSE_MATE: 0.1044,
+        JUMP_IF_TRUE: 0.1011,
+        JUMP_IF_FALSE: 0.1011,
+        MOVE_FORWARD: 0.1911,
+        TURN_LEFT: 0.1011,
+        TURN_RIGHT: 0.1011,
+        REPRODUCE: 0.0911,
+      }
+
+      for (const [op, expectedRatio] of Object.entries(expected)) {
+        const actualRatio = (counts[op] ?? 0) / total
+        expect(Math.abs(actualRatio - expectedRatio)).toBeLessThan(0.02)
+      }
+    })
+  })
 })
