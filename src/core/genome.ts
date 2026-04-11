@@ -249,6 +249,6 @@ export function mutateStats(rng: Rng, parent: SpeciesStats, cfg: Config): Specie
     reproCostFraction: parent.reproCostFraction * driftFactor(),
     initialEnergy: parent.initialEnergy * driftFactor(),
     maxSenseRange: parent.maxSenseRange * driftFactor(),
-    ageDeathVariability: parent.ageDeathVariability * driftFactor(),
+    ageDeathVariability: clamp(parent.ageDeathVariability * driftFactor(), 0.05, 0.7),
   }
 }
