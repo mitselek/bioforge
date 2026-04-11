@@ -52,7 +52,7 @@ describe('checkDeath', () => {
       const entity = makeHerbivore(50, 900, 900)
       const ledger = makeLedgerWith(50)
       const dm = makeDeadMatterRegistry()
-      const result = checkDeathBase(entity, ledger, dm, cfg)
+      const result = checkDeathV2(entity, makeRng(1), ledger, dm, cfg)
       expect(result.died).toBe(true)
     })
 
@@ -61,7 +61,7 @@ describe('checkDeath', () => {
       const entity = makeHerbivore(50, 950, 900)
       const ledger = makeLedgerWith(50)
       const dm = makeDeadMatterRegistry()
-      const result = checkDeathBase(entity, ledger, dm, cfg)
+      const result = checkDeathV2(entity, makeRng(1), ledger, dm, cfg)
       expect(result.died).toBe(true)
     })
 
@@ -70,7 +70,7 @@ describe('checkDeath', () => {
       const entity = makeHerbivore(cfg.energyEpsilon, 10, 900)
       const ledger = makeLedgerWith(cfg.energyEpsilon)
       const dm = makeDeadMatterRegistry()
-      const result = checkDeathBase(entity, ledger, dm, cfg)
+      const result = checkDeathV2(entity, makeRng(1), ledger, dm, cfg)
       expect(result.died).toBe(true)
     })
 
@@ -79,7 +79,7 @@ describe('checkDeath', () => {
       const entity = makeHerbivore(50, 10, 900)
       const ledger = makeLedgerWith(50)
       const dm = makeDeadMatterRegistry()
-      const result = checkDeathBase(entity, ledger, dm, cfg)
+      const result = checkDeathV2(entity, makeRng(1), ledger, dm, cfg)
       expect(result.died).toBe(false)
       expect(result.corpse).toBeNull()
     })
@@ -91,7 +91,7 @@ describe('checkDeath', () => {
       const entity = makeHerbivore(75, 900, 900)
       const ledger = makeLedgerWith(75)
       const dm = makeDeadMatterRegistry()
-      const result = checkDeathBase(entity, ledger, dm, cfg)
+      const result = checkDeathV2(entity, makeRng(1), ledger, dm, cfg)
       expect(result.corpse).not.toBeNull()
       expect(result.corpse?.energy).toBeCloseTo(75, 10)
       expect(result.corpse?.position).toEqual({ x: 20, y: 10 })
@@ -102,7 +102,7 @@ describe('checkDeath', () => {
       const entity = makeHerbivore(75, 900, 900)
       const ledger = makeLedgerWith(75)
       const dm = makeDeadMatterRegistry()
-      checkDeathBase(entity, ledger, dm, cfg)
+      checkDeathV2(entity, makeRng(1), ledger, dm, cfg)
       expect([...dm.corpses()]).toHaveLength(1)
     })
 
@@ -111,7 +111,7 @@ describe('checkDeath', () => {
       const entity = makeHerbivore(75, 900, 900)
       const ledger = makeLedgerWith(75)
       const dm = makeDeadMatterRegistry()
-      checkDeathBase(entity, ledger, dm, cfg)
+      checkDeathV2(entity, makeRng(1), ledger, dm, cfg)
       expect(() => ledger.get({ kind: 'entity', id: 1 })).toThrow()
     })
   })
@@ -123,7 +123,7 @@ describe('checkDeath', () => {
       const ledger = makeLedgerWith(75)
       const dm = makeDeadMatterRegistry()
       const totalBefore = ledger.totalEnergy()
-      checkDeathBase(entity, ledger, dm, cfg)
+      checkDeathV2(entity, makeRng(1), ledger, dm, cfg)
       expect(ledger.totalEnergy()).toBeCloseTo(totalBefore, 10)
     })
 
@@ -133,7 +133,7 @@ describe('checkDeath', () => {
       const ledger = makeLedgerWith(cfg.energyEpsilon)
       const dm = makeDeadMatterRegistry()
       const totalBefore = ledger.totalEnergy()
-      checkDeathBase(entity, ledger, dm, cfg)
+      checkDeathV2(entity, makeRng(1), ledger, dm, cfg)
       expect(ledger.totalEnergy()).toBeCloseTo(totalBefore, 10)
     })
   })
@@ -146,7 +146,7 @@ describe('checkDeath', () => {
       const ledger = makeLedger({ totalEnergy: 1000, initialSoil: 1000 })
       ledger.register({ kind: 'entity', id: 1 }, 0)
       const dm = makeDeadMatterRegistry()
-      const result = checkDeathBase(entity, ledger, dm, cfg2)
+      const result = checkDeathV2(entity, makeRng(1), ledger, dm, cfg2)
       expect(result.died).toBe(true)
       expect(result.corpse).toBeNull()
     })
@@ -158,7 +158,7 @@ describe('checkDeath', () => {
       const ledger = makeLedger({ totalEnergy: 1000, initialSoil: 1000 })
       ledger.register({ kind: 'entity', id: 1 }, 0)
       const dm = makeDeadMatterRegistry()
-      checkDeathBase(entity, ledger, dm, cfg2)
+      checkDeathV2(entity, makeRng(1), ledger, dm, cfg2)
       expect([...dm.corpses()]).toHaveLength(0)
     })
   })
@@ -511,7 +511,6 @@ function makeVariabilityConfig(variability: number): Config {
       ...base.species,
       herbivore: {
         ...base.species.herbivore,
-        // @ts-expect-error — ageDeathVariability not yet in SpeciesStats; remove when GREEN adds it
         ageDeathVariability: variability,
       },
     },
@@ -553,8 +552,8 @@ function checkDeathV2(
   deadMatter: Parameters<typeof checkDeathBase>[2],
   cfg10: Parameters<typeof checkDeathBase>[3],
 ): ReturnType<typeof checkDeathBase> {
-  void rng
-  return checkDeathBase(entity, ledger, deadMatter, cfg10)
+  // @ts-expect-error — checkDeathBase is 4-param; GREEN will add rng as 2nd param, then remove this
+  return checkDeathBase(entity, rng, ledger, deadMatter, cfg10)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
