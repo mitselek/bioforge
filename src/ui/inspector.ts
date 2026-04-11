@@ -2,7 +2,10 @@
  * Inspector panel: formats selected-entity details as display strings.
  *
  * `renderInspector(entity, theme)` returns lines showing species, age,
- * energy, maturity, last sense result, and genome tape with IP highlight.
+ * energy, maturity, and last sense result. Returns a placeholder when
+ * called with `undefined`.
+ *
+ * `renderGenome(entity)` returns the genome tape with IP highlight.
  * Returns a placeholder when called with `undefined`.
  *
  * See docs/superpowers/specs/2026-04-10-bioforge-design.md §14.
@@ -39,6 +42,24 @@ function fmtInstruction(inst: Entity['genome']['tape'][number]): string {
 }
 
 /**
+ * Return genome tape lines for the given entity, or a placeholder if undefined.
+ * Exactly one line will contain '>' at the instruction pointer position.
+ *
+ * @param entity - Selected entity, or undefined for no selection.
+ */
+export function renderGenome(entity: Entity | undefined): string[] {
+  if (entity === undefined) {
+    return NO_SELECTION_LINES.slice()
+  }
+
+  const { genome } = entity
+  return genome.tape.map((inst, i) => {
+    const prefix = i === genome.ip ? IP_MARKER : ' '
+    return `  ${prefix}[${String(i).padStart(2)}] ${fmtInstruction(inst)}`
+  })
+}
+
+/**
  * Return inspector lines for the given entity, or a placeholder if undefined.
  *
  * @param entity - Selected entity, or undefined for no selection.
@@ -51,7 +72,7 @@ export function renderInspector(entity: Entity | undefined, theme: Theme): strin
     return NO_SELECTION_LINES.slice()
   }
 
-  const { id, species, age, lifespan, maturityAge, energy, lastSense, genome } = entity
+  const { id, species, age, lifespan, maturityAge, energy, lastSense } = entity
 
   const mature = age >= maturityAge ? 'mature' : 'juvenile'
 
@@ -59,18 +80,11 @@ export function renderInspector(entity: Entity | undefined, theme: Theme): strin
     ? `${lastSense.kind} dist=${lastSense.distance.toFixed(1)} angle=${lastSense.angle.toFixed(2)}`
     : `${lastSense.kind} (none)`
 
-  const tapeLines = genome.tape.map((inst, i) => {
-    const prefix = i === genome.ip ? IP_MARKER : ' '
-    return `  ${prefix}[${String(i).padStart(2)}] ${fmtInstruction(inst)}`
-  })
-
   return [
     `ID:        ${String(id).padStart(8)}`,
     `Species:   ${species}`,
     `Age:       ${String(age).padStart(5)} / ${String(lifespan).padStart(5)}  (${mature})`,
     `Energy:    ${energy.toFixed(2).padStart(10)}`,
     `Sense:     ${senseStr}`,
-    `Genome (${String(genome.tape.length)} instr, ip=${String(genome.ip)}):`,
-    ...tapeLines,
   ]
 }
