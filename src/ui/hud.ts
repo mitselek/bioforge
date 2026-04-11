@@ -14,6 +14,23 @@
 
 import type { SimState } from '../core/sim.js'
 import type { Config } from '../core/config.js'
+import type { ChartHistory } from './chart.js'
+import type { Clock } from '../core/clock.js'
+
+const SPARK_CHARS = ' ▁▂▃▄▅▆▇█'
+
+function miniSparkline(values: number[], width: number): string {
+  if (values.length === 0) return ' '.repeat(width)
+  const sample = values.length <= width ? values : values.slice(values.length - width)
+  const max = Math.max(...sample)
+  return sample
+    .map((v) => {
+      const idx = max === 0 ? 0 : Math.round((v / max) * (SPARK_CHARS.length - 1))
+      return SPARK_CHARS[idx] ?? ' '
+    })
+    .join('')
+    .padStart(width)
+}
 
 /**
  * Format a number to a fixed number of decimal places, right-aligned in a
@@ -59,7 +76,7 @@ export function renderMiniHud(simState: SimState): string[] {
  *   Poop:      <count>
  *   Compost:   <count>
  */
-export function renderHud(simState: SimState, cfg: Config): string[] {
+export function renderHud(simState: SimState, cfg: Config, chartHistory?: ChartHistory): string[] {
   const livingEnergy = Array.from(simState.entities.values()).reduce((sum, e) => sum + e.energy, 0)
   const soilEnergy = simState.totalEnergy - livingEnergy
 
@@ -73,6 +90,25 @@ export function renderHud(simState: SimState, cfg: Config): string[] {
   const poop = 0
   const compost = 0
 
+  const sparkWidth = 20
+  const pts = chartHistory?.points ?? []
+  const plantSpark = miniSparkline(
+    pts.map((p) => p.plant),
+    sparkWidth,
+  )
+  const herbSpark = miniSparkline(
+    pts.map((p) => p.herbivore),
+    sparkWidth,
+  )
+  const carnSpark = miniSparkline(
+    pts.map((p) => p.carnivore),
+    sparkWidth,
+  )
+  const decompSpark = miniSparkline(
+    pts.map((p) => p.decomposer),
+    sparkWidth,
+  )
+
   return [
     `Tick:      ${String(simState.tick).padStart(8)}`,
     `Speed:     ${fmt(cfg.baseHz, 1, 7)} Hz`,
@@ -80,12 +116,28 @@ export function renderHud(simState: SimState, cfg: Config): string[] {
     `Soil E:    ${fmt(soilEnergy, 2, 10)}`,
     `---`,
     `Plant:     ${String(plant).padStart(8)}`,
+    plantSpark,
     `Herbivore: ${String(herbivore).padStart(8)}`,
+    herbSpark,
     `Carnivore: ${String(carnivore).padStart(8)}`,
+    carnSpark,
     `Decomposer:${String(decomposer).padStart(8)}`,
+    decompSpark,
     `---`,
     `Corpses:   ${String(corpses).padStart(8)}`,
     `Poop:      ${String(poop).padStart(8)}`,
     `Compost:   ${String(compost).padStart(8)}`,
+  ]
+}
+
+/**
+ * Return keyboard control hint lines and current speed for the controls panel.
+ */
+export function renderControls(clock: Clock): string[] {
+  return [
+    `[space] pause/resume`,
+    `[r] restart  [q] quit`,
+    `[l] layout`,
+    `Speed: ${clock.speed.toFixed(1)}x`,
   ]
 }

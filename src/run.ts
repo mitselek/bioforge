@@ -13,8 +13,8 @@ import { defaultConfig } from './core/config.js'
 import { createLayout } from './ui/layout.js'
 import { bindKeys } from './ui/input.js'
 import { rasterize } from './ui/worldView.js'
-import { renderHud, renderMiniHud } from './ui/hud.js'
-import { makeChartHistory, updateChart, renderChart } from './ui/chart.js'
+import { renderHud, renderMiniHud, renderControls } from './ui/hud.js'
+import { makeChartHistory, updateChart } from './ui/chart.js'
 import { renderInspector, renderGenome } from './ui/inspector.js'
 import { ASCII_THEME } from './ui/theme.js'
 import { applyLayout } from './ui/layouts.js'
@@ -132,15 +132,14 @@ const loop = setInterval(() => {
   worldBox.setContent(worldLines.join('\n'))
 
   // HUD panel
-  hudBox.setContent(renderHud(state, cfg).join('\n'))
+  chartHistory = updateChart(chartHistory, state)
+  hudBox.setContent(renderHud(state, cfg, chartHistory).join('\n'))
 
   // Mini HUD panel (visible in LAYOUT_FS only — layout controls visibility)
   miniHudBox.setContent(renderMiniHud(state).join('\n'))
 
-  // Chart panel
-  chartHistory = updateChart(chartHistory, state)
-  const chartWidth = Math.max(10, (chartBox.width as number) - 14)
-  chartBox.setContent(renderChart(chartHistory, chartWidth).join('\n'))
+  // Controls panel
+  chartBox.setContent(renderControls(clock).join('\n'))
 
   // Inspector panel
   inspectorBox.setContent(renderInspector(app.selectedEntity, ASCII_THEME).join('\n'))

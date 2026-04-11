@@ -79,7 +79,7 @@ export function createLayout(): Layout {
 
   const chartBox = blessed.box({
     parent: screen,
-    label: ' Population ',
+    label: ' Controls ',
     top: '100%-18',
     left: 0,
     width: '100%-32',
