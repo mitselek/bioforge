@@ -27,6 +27,7 @@ export interface SpeciesStats {
   readonly reproCostFraction: number
   readonly initialEnergy: number
   readonly maxSenseRange: number
+  readonly ageDeathVariability: number
 }
 
 export interface MutationRates {
@@ -85,6 +86,7 @@ export function defaultConfig(): Config {
     reproCostFraction: 0,
     initialEnergy: 50,
     maxSenseRange: 0,
+    ageDeathVariability: 0.2,
   }
   const herbivore: SpeciesStats = {
     radius: 0.5,
@@ -103,6 +105,7 @@ export function defaultConfig(): Config {
     reproCostFraction: 0.5,
     initialEnergy: 100,
     maxSenseRange: 12,
+    ageDeathVariability: 0.2,
   }
   const carnivore: SpeciesStats = {
     radius: 0.7,
@@ -121,6 +124,7 @@ export function defaultConfig(): Config {
     reproCostFraction: 0.5,
     initialEnergy: 200,
     maxSenseRange: 15,
+    ageDeathVariability: 0.2,
   }
   const decomposer: SpeciesStats = {
     radius: 0.4,
@@ -139,6 +143,7 @@ export function defaultConfig(): Config {
     reproCostFraction: 0.5,
     initialEnergy: 80,
     maxSenseRange: 10,
+    ageDeathVariability: 0.2,
   }
 
   return {
