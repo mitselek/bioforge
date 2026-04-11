@@ -1,0 +1,120 @@
+{
+  "seed": 42,
+  "totalEnergy": 100000,
+  "worldW": 80,
+  "worldH": 30,
+  "baseHz": 30,
+
+  "initialCounts": {
+    "plant": 200,
+    "herbivore": 20,
+    "carnivore": 0,
+    "decomposer": 30
+  },
+
+  "corpseDecayRate": 0.05,
+  "poopThreshold": 10,
+  "poopDecayRate": 0,
+  "plantSpawnBaseProb": 0.05,
+  "compostBoost": 0.5,
+  "compostBoostCap": 3.0,
+  "compostSpawnRadius": 2,
+  "reproCooldownTicks": 50,
+  "minReproWindow": 30,
+  "energyEpsilon": 0.001,
+
+  "turnRate": 3.14159,
+  "autoSpawnPlants": true,
+  "minTapeLength": 2,
+  "maxTapeLength": 64,
+  "initialTapeLengthMin": 6,
+  "initialTapeLengthMax": 16,
+  "compostRadius": 3,
+
+  "species": {
+    "plant": {
+      "radius": 0.4,
+      "maxSpeed": 0,
+      "baseMetabolicRate": 0.01,
+      "moveCostLinear": 0,
+      "moveCostQuadratic": 0,
+      "eatRate": 0,
+      "absorbRate": 1.0,
+      "efficiency": 0,
+      "lifespanMean": 1500,
+      "lifespanStddev": 100,
+      "maturityAgeMean": 400,
+      "maturityAgeStddev": 40,
+      "reproThresholdEnergy": 0,
+      "reproCostFraction": 0,
+      "initialEnergy": 30,
+      "maxSenseRange": 0
+    },
+    "herbivore": {
+      "radius": 0.5,
+      "maxSpeed": 0.5,
+      "baseMetabolicRate": 0.02,
+      "moveCostLinear": 0.005,
+      "moveCostQuadratic": 0.01,
+      "eatRate": 3.0,
+      "absorbRate": 0,
+      "efficiency": 0.7,
+      "lifespanMean": 1200,
+      "lifespanStddev": 80,
+      "maturityAgeMean": 300,
+      "maturityAgeStddev": 30,
+      "reproThresholdEnergy": 60,
+      "reproCostFraction": 0.3,
+      "initialEnergy": 80,
+      "maxSenseRange": 12
+    },
+    "carnivore": {
+      "radius": 0.7,
+      "maxSpeed": 1.0,
+      "baseMetabolicRate": 0.06,
+      "moveCostLinear": 0.02,
+      "moveCostQuadratic": 0.04,
+      "eatRate": 3.0,
+      "absorbRate": 0,
+      "efficiency": 0.6,
+      "lifespanMean": 2000,
+      "lifespanStddev": 120,
+      "maturityAgeMean": 500,
+      "maturityAgeStddev": 50,
+      "reproThresholdEnergy": 180,
+      "reproCostFraction": 0.5,
+      "initialEnergy": 150,
+      "maxSenseRange": 15
+    },
+    "decomposer": {
+      "radius": 0.4,
+      "maxSpeed": 0.8,
+      "baseMetabolicRate": 0.02,
+      "moveCostLinear": 0.02,
+      "moveCostQuadratic": 0.03,
+      "eatRate": 1.0,
+      "absorbRate": 0,
+      "efficiency": 0.9,
+      "lifespanMean": 1500,
+      "lifespanStddev": 90,
+      "maturityAgeMean": 300,
+      "maturityAgeStddev": 30,
+      "reproThresholdEnergy": 60,
+      "reproCostFraction": 0.5,
+      "initialEnergy": 60,
+      "maxSenseRange": 10
+    }
+  },
+
+  "mutationRates": {
+    "argDrift": 0.1,
+    "argDriftSigma": 0.05,
+    "opSwap": 0.05,
+    "insert": 0.03,
+    "delete": 0.03,
+    "statDrift": 0.05,
+    "statDriftSigma": 0.1
+  },
+
+  "_comment": "Experiment config — edit values and restart sim. Start with no carnivores until plant-herbivore-decomposer loop is stable."
+}
