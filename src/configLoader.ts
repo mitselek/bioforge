@@ -1,5 +1,5 @@
 /**
- * Config file loader stub.
+ * Config file loader.
  *
  * `loadConfigFile(path)` reads a JSON file and returns `Partial<Config>`.
  * Throws on bad JSON. Returns `{}` if the file does not exist.
