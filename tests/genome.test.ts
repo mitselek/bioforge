@@ -434,6 +434,22 @@ describe('genome', () => {
       }
     })
 
+    // Issue #10 follow-up: ageDeathVariability clamping (*BF:Merian*)
+    it('clamps ageDeathVariability to [0.05, 0.7] after drift', () => {
+      const heavyDrift = makeConfig({
+        mutationRates: {
+          ...cfg.mutationRates,
+          statDrift: 1.0,
+          statDriftSigma: 5.0, // huge drift to push past bounds
+        },
+      })
+      for (let seed = 1; seed <= 100; seed++) {
+        const child = mutateStats(makeRng(seed), cfg.species.herbivore, heavyDrift)
+        expect(child.ageDeathVariability).toBeGreaterThanOrEqual(0.05)
+        expect(child.ageDeathVariability).toBeLessThanOrEqual(0.7)
+      }
+    })
+
     it('does not mutate the parent stats', () => {
       const parent = cfg.species.herbivore
       const parentSnapshot = JSON.stringify(parent)

@@ -51,6 +51,14 @@ describe('config', () => {
       const cfg = defaultConfig()
       expect(cfg.species.plant.maxSpeed).toBe(0)
     })
+
+    // Issue #10 follow-up: ageDeathVariability defaults (*BF:Merian*)
+    it('all four species default ageDeathVariability to 0.2', () => {
+      const cfg = defaultConfig()
+      for (const species of ['plant', 'herbivore', 'carnivore', 'decomposer'] as const) {
+        expect(cfg.species[species].ageDeathVariability).toBe(0.2)
+      }
+    })
   })
 
   describe('makeConfig', () => {

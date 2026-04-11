@@ -34,6 +34,8 @@ const VALID_JSON_PATH = tmpPath('valid')
 const BAD_JSON_PATH = tmpPath('badjson')
 const SEED_OVERRIDE_PATH = tmpPath('seed-override')
 const NONEXISTENT_PATH = tmpPath('nonexistent-xyzzy')
+const CLAMP_LOW_PATH = tmpPath('clamp-low')
+const CLAMP_HIGH_PATH = tmpPath('clamp-high')
 
 beforeAll(() => {
   // Valid empty object — no overrides
@@ -44,10 +46,27 @@ beforeAll(() => {
   fs.writeFileSync(SEED_OVERRIDE_PATH, JSON.stringify({ seed: 99999 }), 'utf8')
   // Ensure the nonexistent path really doesn't exist
   if (fs.existsSync(NONEXISTENT_PATH)) fs.unlinkSync(NONEXISTENT_PATH)
+  // Issue #10 follow-up: extreme ageDeathVariability values for clamping tests
+  fs.writeFileSync(
+    CLAMP_LOW_PATH,
+    JSON.stringify({ species: { herbivore: { ageDeathVariability: 0.01 } } }),
+    'utf8',
+  )
+  fs.writeFileSync(
+    CLAMP_HIGH_PATH,
+    JSON.stringify({ species: { herbivore: { ageDeathVariability: 0.95 } } }),
+    'utf8',
+  )
 })
 
 afterAll(() => {
-  for (const p of [VALID_JSON_PATH, BAD_JSON_PATH, SEED_OVERRIDE_PATH]) {
+  for (const p of [
+    VALID_JSON_PATH,
+    BAD_JSON_PATH,
+    SEED_OVERRIDE_PATH,
+    CLAMP_LOW_PATH,
+    CLAMP_HIGH_PATH,
+  ]) {
     try {
       fs.unlinkSync(p)
     } catch {
@@ -162,5 +181,24 @@ describe('Issue #9 AC4 — JSON overrides change resulting Config', () => {
     const def = defaultConfig()
     expect(cfg.worldW).toBe(def.worldW)
     expect(cfg.baseHz).toBe(def.baseHz)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Issue #10 follow-up — config loader clamps ageDeathVariability to [0.05, 0.7]
+// (*BF:Merian*)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Issue #10 — config loader clamps ageDeathVariability', () => {
+  it('ageDeathVariability below 0.05 is clamped to 0.05', () => {
+    const overrides = loadConfigFile(CLAMP_LOW_PATH)
+    const cfg = makeConfig(overrides)
+    expect(cfg.species.herbivore.ageDeathVariability).toBe(0.05)
+  })
+
+  it('ageDeathVariability above 0.7 is clamped to 0.7', () => {
+    const overrides = loadConfigFile(CLAMP_HIGH_PATH)
+    const cfg = makeConfig(overrides)
+    expect(cfg.species.herbivore.ageDeathVariability).toBe(0.7)
   })
 })
