@@ -541,6 +541,22 @@ function makeLedgerV(id: number, energy: number): ReturnType<typeof makeLedger> 
   return ledger
 }
 
+// Issue #10: checkDeath will gain `rng` as 2nd parameter for probabilistic death.
+// This wrapper matches the new 5-param signature so tests express the intended API.
+// Currently `void`s rng and delegates to the old 4-param checkDeathBase.
+// When GREEN updates checkDeath to accept rng, replace this wrapper with the real import.
+// (*BF:Merian*)
+function checkDeathV2(
+  entity: Parameters<typeof checkDeathBase>[0],
+  rng: ReturnType<typeof makeRng>,
+  ledger: Parameters<typeof checkDeathBase>[1],
+  deadMatter: Parameters<typeof checkDeathBase>[2],
+  cfg10: Parameters<typeof checkDeathBase>[3],
+): ReturnType<typeof checkDeathBase> {
+  void rng
+  return checkDeathBase(entity, ledger, deadMatter, cfg10)
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // AC1 — Below lower bound: entity never dies from age
 // ─────────────────────────────────────────────────────────────────────────────
@@ -552,7 +568,7 @@ describe('Issue #10 AC1 — age < lower bound: no age death', () => {
     const entity = makeHerbivoreV(50, 719)
     const ledger = makeLedgerV(10, 50)
     const dm = makeDeadMatterRegistry()
-    const result = checkDeathBase(entity, ledger, dm, cfg2)
+    const result = checkDeathV2(entity, makeRng(42), ledger, dm, cfg2)
     expect(result.died).toBe(false)
   })
 })
@@ -567,7 +583,7 @@ describe('Issue #10 AC2 — age >= upper bound: guaranteed death', () => {
     const entity = makeHerbivoreV(50, 1080)
     const ledger = makeLedgerV(10, 50)
     const dm = makeDeadMatterRegistry()
-    const result = checkDeathBase(entity, ledger, dm, cfg2)
+    const result = checkDeathV2(entity, makeRng(42), ledger, dm, cfg2)
     expect(result.died).toBe(true)
   })
 
@@ -576,7 +592,7 @@ describe('Issue #10 AC2 — age >= upper bound: guaranteed death', () => {
     const entity = makeHerbivoreV(50, 1200)
     const ledger = makeLedgerV(10, 50)
     const dm = makeDeadMatterRegistry()
-    const result = checkDeathBase(entity, ledger, dm, cfg2)
+    const result = checkDeathV2(entity, makeRng(42), ledger, dm, cfg2)
     expect(result.died).toBe(true)
   })
 })
@@ -607,7 +623,7 @@ describe('Issue #10 AC3 — ramp zone: 35–65% die at p=0.5 midpoint (1000 tria
       const ledger = makeLedger({ totalEnergy: 1050, initialSoil: 1000 })
       ledger.register({ kind: 'entity', id: seed + 2000 }, 50)
       const dm = makeDeadMatterRegistry()
-      const result = checkDeathBase(entity, ledger, dm, cfg2)
+      const result = checkDeathV2(entity, makeRng(seed), ledger, dm, cfg2)
       if (result.died) deaths++
     }
     const rate = deaths / TRIALS
@@ -626,7 +642,7 @@ describe('Issue #10 AC4 — ageDeathVariability=0 behaves like hard cutoff', () 
     const entity = makeHerbivoreV(50, LIFESPAN - 1)
     const ledger = makeLedgerV(10, 50)
     const dm = makeDeadMatterRegistry()
-    const result = checkDeathBase(entity, ledger, dm, cfg2)
+    const result = checkDeathV2(entity, makeRng(42), ledger, dm, cfg2)
     expect(result.died).toBe(false)
   })
 
@@ -635,7 +651,7 @@ describe('Issue #10 AC4 — ageDeathVariability=0 behaves like hard cutoff', () 
     const entity = makeHerbivoreV(50, LIFESPAN)
     const ledger = makeLedgerV(10, 50)
     const dm = makeDeadMatterRegistry()
-    const result = checkDeathBase(entity, ledger, dm, cfg2)
+    const result = checkDeathV2(entity, makeRng(42), ledger, dm, cfg2)
     expect(result.died).toBe(true)
   })
 
@@ -644,7 +660,7 @@ describe('Issue #10 AC4 — ageDeathVariability=0 behaves like hard cutoff', () 
     const entity = makeHerbivoreV(50, LIFESPAN + 10)
     const ledger = makeLedgerV(10, 50)
     const dm = makeDeadMatterRegistry()
-    const result = checkDeathBase(entity, ledger, dm, cfg2)
+    const result = checkDeathV2(entity, makeRng(42), ledger, dm, cfg2)
     expect(result.died).toBe(true)
   })
 })
@@ -659,7 +675,7 @@ describe('Issue #10 AC5 — starvation death is unaffected by ageDeathVariabilit
     const entity = makeHerbivoreV(cfg2.energyEpsilon, 1)
     const ledger = makeLedgerV(10, cfg2.energyEpsilon)
     const dm = makeDeadMatterRegistry()
-    const result = checkDeathBase(entity, ledger, dm, cfg2)
+    const result = checkDeathV2(entity, makeRng(42), ledger, dm, cfg2)
     expect(result.died).toBe(true)
   })
 })
@@ -675,7 +691,7 @@ describe('Issue #10 AC6 — energy conservation on probabilistic age death', () 
     const ledger = makeLedgerV(10, 75)
     const dm = makeDeadMatterRegistry()
     const totalBefore = ledger.totalEnergy()
-    checkDeathBase(entity, ledger, dm, cfg2)
+    checkDeathV2(entity, makeRng(42), ledger, dm, cfg2)
     expect(ledger.totalEnergy()).toBeCloseTo(totalBefore, 10)
   })
 
@@ -684,7 +700,7 @@ describe('Issue #10 AC6 — energy conservation on probabilistic age death', () 
     const entity = makeHerbivoreV(75, UPPER)
     const ledger = makeLedgerV(10, 75)
     const dm = makeDeadMatterRegistry()
-    const result = checkDeathBase(entity, ledger, dm, cfg2)
+    const result = checkDeathV2(entity, makeRng(42), ledger, dm, cfg2)
     expect(result.died).toBe(true)
     expect(result.corpse?.energy).toBeCloseTo(75, 10)
   })
