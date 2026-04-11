@@ -24,24 +24,6 @@ function fmt(n: number, decimals: number, width: number): string {
 }
 
 /**
- * Return HUD lines for the current sim state.
- *
- * Lines:
- *   Tick:      <tick>
- *   Speed:     <baseHz> Hz
- *   Total E:   <totalEnergy>
- *   Soil E:    <soilEnergy>
- *   --- entities ---
- *   Plant:     <count>
- *   Herbivore: <count>
- *   Carnivore: <count>
- *   Decomposer:<count>
- *   --- dead matter ---
- *   Corpses:   <count>
- *   Poop:      <count>
- *   Compost:   <count>
- */
-/**
  * Return mini HUD lines showing per-species counts for LAYOUT_FS overlay.
  *
  * Returns exactly 4 lines: P:<plant>, H:<herbivore>, C:<carnivore>, D:<decomposer>.
@@ -59,6 +41,24 @@ export function renderMiniHud(simState: SimState): string[] {
   ]
 }
 
+/**
+ * Return HUD lines for the current sim state.
+ *
+ * Lines:
+ *   Tick:      <tick>
+ *   Speed:     <baseHz> Hz
+ *   Total E:   <totalEnergy>
+ *   Soil E:    <soilEnergy>
+ *   --- entities ---
+ *   Plant:     <count>
+ *   Herbivore: <count>
+ *   Carnivore: <count>
+ *   Decomposer:<count>
+ *   --- dead matter ---
+ *   Corpses:   <count>
+ *   Poop:      <count>
+ *   Compost:   <count>
+ */
 export function renderHud(simState: SimState, cfg: Config): string[] {
   const livingEnergy = Array.from(simState.entities.values()).reduce((sum, e) => sum + e.energy, 0)
   const soilEnergy = simState.totalEnergy - livingEnergy
