@@ -16,7 +16,7 @@
  * (*BF:Merian*)
  */
 
-import { describe, it, expect, assert, beforeEach } from 'vitest'
+import { describe, it, expect, assert, beforeEach, vi } from 'vitest'
 import { renderInspector } from '../src/ui/inspector.js'
 import { entityId, makeEntity } from '../src/core/entity.js'
 import type { Entity } from '../src/core/entity.js'
@@ -477,5 +477,134 @@ describe('AC2.4 — renderInspector still shows ID, species, age, energy, sense'
     const lines = renderInspector(undefined, ASCII_THEME)
     expect(Array.isArray(lines)).toBe(true)
     expect(lines.length).toBeGreaterThan(0)
+  })
+})
+
+// =============================================================================
+// AC3 — Layout panel creation (6 boxes)
+// =============================================================================
+//
+// AC3.1: createLayout() returns an object with worldBox, hudBox, miniHudBox,
+//        chartBox, inspectorBox, genomeBox
+// AC3.2: miniHudBox exists in the return value
+// AC3.3: genomeBox exists in the return value
+// AC3.4: LAYOUT_1 is applied as the default (createLayout does not crash)
+//
+// Spec §14. Plan: ~/.claude/plans/jolly-zooming-twilight.md §AC3
+//
+// NOTE: blessed.screen() and blessed.box() require a real TTY and crash in
+// vitest. We stub the entire 'blessed' module so createLayout() runs headless.
+// The actual box rendering is smoke-verified by PO via `npm run dev`.
+//
+// (*BF:Merian*)
+// =============================================================================
+
+// ── Blessed stub ─────────────────────────────────────────────────────────────
+// vi.mock is hoisted by Vitest's transform — this runs before any imports.
+
+vi.mock('blessed', () => {
+  function makeBox(opts: Record<string, unknown>): Record<string, unknown> {
+    return { ...opts, _type: 'box' }
+  }
+  function makeScreen(): Record<string, unknown> {
+    return { _type: 'screen', on: vi.fn(), render: vi.fn() }
+  }
+  return { default: { screen: makeScreen, box: makeBox } }
+})
+
+// ── createLayout import (after mock registration) ────────────────────────────
+// Dynamic import ensures the blessed mock is in place when layout.ts is loaded.
+// The Layout type currently has 4 boxes; we cast to a wider type so tsc doesn't
+// error on the missing miniHudBox/genomeBox fields (they don't exist yet — RED).
+
+interface Layout6 {
+  readonly screen: unknown
+  readonly worldBox: unknown
+  readonly hudBox: unknown
+  readonly miniHudBox: unknown
+  readonly chartBox: unknown
+  readonly inspectorBox: unknown
+  readonly genomeBox: unknown
+}
+
+const { createLayout } = (await import('../src/ui/layout.js')) as {
+  createLayout: () => Layout6
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC3.1 — createLayout returns all 6 boxes + screen
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('AC3.1 — createLayout returns 6 named boxes', () => {
+  it('returns worldBox', () => {
+    expect(createLayout()).toHaveProperty('worldBox')
+  })
+
+  it('returns hudBox', () => {
+    expect(createLayout()).toHaveProperty('hudBox')
+  })
+
+  it('returns chartBox', () => {
+    expect(createLayout()).toHaveProperty('chartBox')
+  })
+
+  it('returns inspectorBox', () => {
+    expect(createLayout()).toHaveProperty('inspectorBox')
+  })
+
+  it('returns miniHudBox (new panel)', () => {
+    // RED: fails until GREEN adds miniHudBox to createLayout()
+    expect(createLayout()).toHaveProperty('miniHudBox')
+  })
+
+  it('returns genomeBox (new panel)', () => {
+    // RED: fails until GREEN adds genomeBox to createLayout()
+    expect(createLayout()).toHaveProperty('genomeBox')
+  })
+
+  it('return value has exactly screen + 6 box keys', () => {
+    const layout = createLayout()
+    const keys = Object.keys(layout as object).sort()
+    expect(keys).toEqual([
+      'chartBox',
+      'genomeBox',
+      'hudBox',
+      'inspectorBox',
+      'miniHudBox',
+      'screen',
+      'worldBox',
+    ])
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC3.2 — miniHudBox is present
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('AC3.2 — miniHudBox is present in the layout', () => {
+  it('miniHudBox is defined (not undefined)', () => {
+    const layout = createLayout()
+    expect(layout.miniHudBox).toBeDefined()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC3.3 — genomeBox is present
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('AC3.3 — genomeBox is present in the layout', () => {
+  it('genomeBox is defined (not undefined)', () => {
+    const layout = createLayout()
+    expect(layout.genomeBox).toBeDefined()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC3.4 — createLayout does not crash (LAYOUT_1 applied as default)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('AC3.4 — createLayout() does not throw (LAYOUT_1 default applied)', () => {
+  it('createLayout() completes without throwing', () => {
+    expect(() => createLayout()).not.toThrow()
   })
 })
