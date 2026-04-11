@@ -1116,3 +1116,281 @@ describe('Issue #6 AC5 — grid cells have { glyph, color } shape', () => {
     }
   })
 })
+
+// =============================================================================
+// Issue #7 — Sparklines in HUD + Controls panel
+// =============================================================================
+//
+// AC1: renderHud(state, cfg, chartHistory) accepts chart history and interleaves
+//      sparkline rows after each species count line
+// AC2: renderControls(clock) returns keyboard hint lines incl. [space], [r], [q], [l]
+//      and speed display; chartBox label in layout.ts changes to "Controls"
+//
+// Spec §14, §15.1. Plan: Issue #7.
+//
+// (*BF:Merian*)
+// =============================================================================
+
+import { renderHud as renderHudBase } from '../src/ui/hud.js'
+import { makeChartHistory, updateChart, type ChartHistory } from '../src/ui/chart.js'
+import { makeClock, type Clock } from '../src/core/clock.js'
+
+// ── Extended renderHud type (3-param form not yet accepted) ──────────────────
+
+type RenderHudFn = (
+  simState: SimState,
+  cfg: ReturnType<typeof defaultConfig>,
+  chartHistory: ChartHistory,
+) => string[]
+
+// renderHud currently accepts only 2 params; cast to extended signature for RED
+const renderHudExtended: RenderHudFn = renderHudBase as unknown as RenderHudFn
+
+// ── Dynamic probe for renderControls (not yet exported) ──────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const hudModuleForControls = (await import('../src/ui/hud.js')) as Record<string, any>
+type RenderControlsFn = (clock: Clock) => string[]
+
+function isRenderControlsFn(v: unknown): v is RenderControlsFn {
+  return typeof v === 'function'
+}
+
+const renderControlsRaw: unknown = hudModuleForControls['renderControls'] ?? undefined
+const renderControls: RenderControlsFn | undefined = isRenderControlsFn(renderControlsRaw)
+  ? renderControlsRaw
+  : undefined
+
+// ── Fixtures ─────────────────────────────────────────────────────────────────
+
+function makeHudState(): SimState {
+  return makeSimState({ plant: 50, herbivore: 30, carnivore: 10, decomposer: 20 })
+}
+
+function makeNonEmptyHistory(): ChartHistory {
+  // 5 ticks of data — enough for sparklines to render non-blank chars
+  let h = makeChartHistory()
+  const counts = [
+    { plant: 10, herbivore: 5, carnivore: 2, decomposer: 3 },
+    { plant: 20, herbivore: 8, carnivore: 3, decomposer: 4 },
+    { plant: 30, herbivore: 12, carnivore: 5, decomposer: 6 },
+    { plant: 40, herbivore: 15, carnivore: 7, decomposer: 8 },
+    { plant: 50, herbivore: 20, carnivore: 10, decomposer: 10 },
+  ]
+  for (const c of counts) {
+    h = updateChart(h, makeSimState(c))
+  }
+  return h
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC1.1 — renderHud accepts chartHistory as third param
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Issue #7 AC1.1 — renderHud accepts chartHistory as third param', () => {
+  it('renderHud with 3 args does not throw', () => {
+    // RED: renderHud currently only accepts 2 params; this should eventually pass
+    const state = makeHudState()
+    const cfg = defaultConfig()
+    const history = makeNonEmptyHistory()
+    expect(() => renderHudExtended(state, cfg, history)).not.toThrow()
+  })
+
+  it('renderHud returns an array of strings', () => {
+    const state = makeHudState()
+    const cfg = defaultConfig()
+    const history = makeNonEmptyHistory()
+    const lines = renderHudExtended(state, cfg, history)
+    expect(Array.isArray(lines)).toBe(true)
+    for (const l of lines) {
+      expect(typeof l).toBe('string')
+    }
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC1.2 — output contains sparkline characters interleaved with species counts
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Issue #7 AC1.2 — output includes sparkline rows', () => {
+  const SPARKLINE_RE = /[▁▂▃▄▅▆▇█]/u
+
+  it('at least one output line contains a sparkline character', () => {
+    // RED: current renderHud never emits sparkline chars
+    const state = makeHudState()
+    const cfg = defaultConfig()
+    const history = makeNonEmptyHistory()
+    const lines = renderHudExtended(state, cfg, history)
+    const hasSparkline = lines.some((l) => SPARKLINE_RE.test(l))
+    expect(hasSparkline).toBe(true)
+  })
+
+  it('has a sparkline line after the Plant count line', () => {
+    const state = makeHudState()
+    const cfg = defaultConfig()
+    const history = makeNonEmptyHistory()
+    const lines = renderHudExtended(state, cfg, history)
+    const plantIdx = lines.findIndex((l) => /Plant/i.test(l))
+    expect(plantIdx).toBeGreaterThanOrEqual(0)
+    // The line immediately after the plant count must contain a sparkline char
+    const nextLine = lines[plantIdx + 1]
+    expect(nextLine).toBeDefined()
+    expect(SPARKLINE_RE.test(nextLine ?? '')).toBe(true)
+  })
+
+  it('has a sparkline line after the Herbivore count line', () => {
+    const state = makeHudState()
+    const cfg = defaultConfig()
+    const history = makeNonEmptyHistory()
+    const lines = renderHudExtended(state, cfg, history)
+    const idx = lines.findIndex((l) => /Herb/i.test(l))
+    expect(idx).toBeGreaterThanOrEqual(0)
+    const nextLine = lines[idx + 1]
+    expect(nextLine).toBeDefined()
+    expect(SPARKLINE_RE.test(nextLine ?? '')).toBe(true)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC1.3 — HUD still contains tick, speed, totalEnergy, soilEnergy, dead matter
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Issue #7 AC1.3 — HUD still shows required stats fields', () => {
+  const state = makeHudState()
+  const cfg = defaultConfig()
+  const history = makeNonEmptyHistory()
+
+  it('output contains a tick line', () => {
+    const lines = renderHudExtended(state, cfg, history)
+    expect(lines.some((l) => /Tick/i.test(l))).toBe(true)
+  })
+
+  it('output contains a speed line', () => {
+    const lines = renderHudExtended(state, cfg, history)
+    expect(lines.some((l) => /Speed/i.test(l))).toBe(true)
+  })
+
+  it('output contains a total energy line', () => {
+    const lines = renderHudExtended(state, cfg, history)
+    expect(lines.some((l) => /Total.*E/i.test(l))).toBe(true)
+  })
+
+  it('output contains a soil energy line', () => {
+    const lines = renderHudExtended(state, cfg, history)
+    expect(lines.some((l) => /Soil/i.test(l))).toBe(true)
+  })
+
+  it('output contains a corpse count line', () => {
+    const lines = renderHudExtended(state, cfg, history)
+    expect(lines.some((l) => /Corpse/i.test(l))).toBe(true)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC2.1 — renderControls is exported from hud.ts
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Issue #7 AC2.1 — renderControls is exported from hud.ts', () => {
+  it('renderControls is exported', () => {
+    // RED: renderControls does not yet exist
+    assert(renderControls !== undefined, 'renderControls not yet exported — GREEN must export it')
+  })
+
+  it('renderControls is callable', () => {
+    assert(renderControls !== undefined, 'renderControls not yet exported — GREEN must export it')
+    const clock = makeClock({ baseHz: 20 })
+    expect(() => renderControls(clock)).not.toThrow()
+  })
+
+  it('renderControls returns an array of strings', () => {
+    assert(renderControls !== undefined, 'renderControls not yet exported — GREEN must export it')
+    const clock = makeClock({ baseHz: 20 })
+    const lines = renderControls(clock)
+    expect(Array.isArray(lines)).toBe(true)
+    for (const l of lines) {
+      expect(typeof l).toBe('string')
+    }
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC2.2 — renderControls output includes required hint strings and speed
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Issue #7 AC2.2 — renderControls includes required keyboard hints', () => {
+  it('includes [space] pause/resume hint', () => {
+    assert(renderControls !== undefined, 'renderControls not yet exported — GREEN must export it')
+    const clock = makeClock({ baseHz: 20 })
+    const lines = renderControls(clock)
+    const joined = lines.join('\n')
+    expect(joined).toMatch(/\[space\]/i)
+  })
+
+  it('includes [r] restart hint', () => {
+    assert(renderControls !== undefined, 'renderControls not yet exported — GREEN must export it')
+    const clock = makeClock({ baseHz: 20 })
+    const lines = renderControls(clock)
+    const joined = lines.join('\n')
+    expect(joined).toMatch(/\[r\]/i)
+  })
+
+  it('includes [q] quit hint', () => {
+    assert(renderControls !== undefined, 'renderControls not yet exported — GREEN must export it')
+    const clock = makeClock({ baseHz: 20 })
+    const lines = renderControls(clock)
+    const joined = lines.join('\n')
+    expect(joined).toMatch(/\[q\]/i)
+  })
+
+  it('includes [l] layout hint', () => {
+    assert(renderControls !== undefined, 'renderControls not yet exported — GREEN must export it')
+    const clock = makeClock({ baseHz: 20 })
+    const lines = renderControls(clock)
+    const joined = lines.join('\n')
+    expect(joined).toMatch(/\[l\]/i)
+  })
+
+  it('includes the current speed value', () => {
+    assert(renderControls !== undefined, 'renderControls not yet exported — GREEN must export it')
+    const clock = makeClock({ baseHz: 20 })
+    // Default speed is 1.0
+    const lines = renderControls(clock)
+    const joined = lines.join('\n')
+    // Speed 1.0 should appear as "1.0" or "1.00" etc
+    expect(joined).toMatch(/1\.0/)
+  })
+
+  it('speed display updates when clock speed changes', () => {
+    assert(renderControls !== undefined, 'renderControls not yet exported — GREEN must export it')
+    const clock = makeClock({ baseHz: 20 })
+    clock.speed = 3.0
+    const lines = renderControls(clock)
+    const joined = lines.join('\n')
+    expect(joined).toMatch(/3\.0/)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC2.3 — layout.ts chartBox label is "Controls" not "Population"
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// We test via the blessed mock pattern (already used by AC3 tests above).
+// The label is set in createLayout() when constructing the chartBox.
+
+describe('Issue #7 AC2.3 — chartBox label is "Controls"', () => {
+  // Re-use the blessed mock already registered via vi.mock above this file.
+  // createLayout is imported dynamically AFTER the mock.
+  it('chartBox label contains "Controls" not "Population"', async () => {
+    // RED: layout.ts currently labels chartBox ' Population '
+    const { createLayout: createLayoutFresh } =
+      (await import('../src/ui/layout.js')) as unknown as {
+        createLayout: () => { chartBox: Record<string, unknown> }
+      }
+    const layout = createLayoutFresh()
+    const chartBox = layout.chartBox
+    const rawLabel = chartBox['label']
+    const label: string = typeof rawLabel === 'string' ? rawLabel : ''
+    expect(label).toMatch(/Controls/i)
+    expect(label).not.toMatch(/Population/i)
+  })
+})
