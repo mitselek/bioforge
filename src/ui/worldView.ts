@@ -226,8 +226,9 @@ export function rasterize(
     applyConeOverlay(grid, selected, gridW, gridH)
     applySightLine(grid, selected, gridW, gridH)
 
-    // Highlight selected entity's cell
-    const { col, row } = worldToCell(selected.position.x, selected.position.y, gridW, gridH)
+    // Highlight selected entity's cell (same viewport-scaling formula as main loop)
+    const col = Math.floor((selected.position.x * gridW) / worldW)
+    const row = Math.floor((selected.position.y * gridH) / worldH)
     const gc: GlyphColor = theme[selected.species as keyof Theme]
     const cell = grid[row]?.[col]
     if (cell !== undefined) {
