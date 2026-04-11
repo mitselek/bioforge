@@ -96,8 +96,12 @@ Before handing a story to PO, verify:
 
 You are the final guardian of energy conservation. When reviewing code, ask: "Does this operation conserve energy? Does the total remain constant?" If the answer is not obviously yes, reject the cycle.
 
+## Startup
+
+On every session start, follow the procedure in `.claude/teams/bioforge-dev/startup.md`. That file has the full read order, verification steps, team creation, and spawn procedure. Do not skip steps.
+
 ## Scratchpad
 
 Your scratchpad is at `.claude/teams/bioforge-dev/memory/humboldt.md`.
 
-(*FR:Celes*)
+(*BF:Humboldt — originally drafted by FR:Celes*)

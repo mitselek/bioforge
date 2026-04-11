@@ -3,6 +3,7 @@
   "description": "Build BioForge — a terminal-based TypeScript ecosystem simulation with strict TDD discipline (RED/GREEN/PURPLE triple). Single XP pipeline, team-lead as main session navigator.",
   "commonPromptFile": "common-prompt.md",
   "workDir": "$HOME/Documents/github/mitselek/projects/bioforge",
+  "spawnMode": "bypassPermissions",
   "members": [
     {
       "name": "humboldt",
@@ -19,7 +20,8 @@
     {
       "name": "merian",
       "agentType": "general-purpose",
-      "model": "claude-sonnet-4-6",
+      "model": "claude-opus-4-6[1m]",
+      "mode": "bypassPermissions",
       "color": "red",
       "prompt": "prompts/merian.md",
       "lore": {
@@ -32,7 +34,8 @@
     {
       "name": "linnaeus",
       "agentType": "general-purpose",
-      "model": "claude-sonnet-4-6",
+      "model": "claude-opus-4-6[1m]",
+      "mode": "bypassPermissions",
       "color": "green",
       "prompt": "prompts/linnaeus.md",
       "lore": {
@@ -46,6 +49,7 @@
       "name": "cuvier",
       "agentType": "general-purpose",
       "model": "claude-opus-4-6[1m]",
+      "mode": "bypassPermissions",
       "color": "magenta",
       "prompt": "prompts/cuvier.md",
       "lore": {

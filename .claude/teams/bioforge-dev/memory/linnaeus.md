@@ -1,5 +1,55 @@
 # Linnaeus — GREEN scratchpad
 
+## [CHECKPOINT] 2026-04-11 — Issue #9 config file loader COMPLETE
+
+**State**: 663 tests, 23 test files. Issue #9 done — loadConfigFile + run.ts wired.
+**HEAD**: 11f4962 (Cuvier JSDoc cleanup after 3021458)
+
+| AC | Files | Commit | Result |
+|----|-------|--------|--------|
+| AC1–AC4 | `src/configLoader.ts`, `src/run.ts` | 3021458 | loadConfigFile impl + run.ts wiring |
+| PURPLE | `src/configLoader.ts` | 11f4962 | JSDoc stub text removed |
+
+### [GOTCHA] Flaky perf test in physics.test.ts
+`physics.test.ts:117` — "handles 1000 entities and 1000 queries in under 100ms" — consistently timing out at ~363ms on this machine. Pre-existing, not caused by any Issue #6–9 work. Confirmed by Cuvier. Humboldt to decide whether to raise the threshold or skip.
+
+---
+
+## [CHECKPOINT] 2026-04-11 — Issue #7 sparklines + controls COMPLETE
+
+**State**: 650 tests, 22 test files. Issue #7 done — sparklines in HUD, renderControls exported.
+**HEAD**: 2a76205 (Cuvier accepted, no refactor needed)
+
+| AC | Files | Commit | Result |
+|----|-------|--------|--------|
+| AC1.2 + AC2.1-3 | `src/ui/hud.ts`, `src/ui/layout.ts`, `src/run.ts` | 2a76205 | sparklines + controls |
+
+### [GOTCHA] Private function duplication when can't export
+`chart.ts`'s `sparkline()` is private. Duplicated as `miniSparkline()` in hud.ts — intentional GREEN minimum. Cuvier escalated to Humboldt: if `sparkline` is exported from chart.ts, hud.ts can import it instead.
+
+### [DEFERRED] `renderChart` is dead code
+No callers in `src/` after run.ts switched to `renderControls`. Exported but unused. Cuvier noted — Humboldt to decide whether to remove.
+
+---
+
+## [CHECKPOINT] 2026-04-11 — Issue #6 viewport scaling COMPLETE
+
+**State**: 630 tests, 22 test files. Issue #6 done — viewport scaling in rasterize.
+**HEAD**: 9321548 (Cuvier's align commit after d091e76)
+
+| AC | Files | Commit | Result |
+|----|-------|--------|--------|
+| AC1–AC4 | `src/ui/worldView.ts`, `src/run.ts` | d091e76 | viewport params + scaling formula |
+| PURPLE | `src/ui/worldView.ts` | 9321548 | selected entity highlight formula aligned |
+
+### [GOTCHA] Two entity-to-cell mapping paths in worldView.ts
+Main paint loop and selected-entity highlight must use the SAME formula. In this cycle, I changed the main paint loop to viewport-scaling (`floor(x * gridW / worldW)`) but left the selected-entity highlight using `worldToCell()` (wrap-based: `floor(x) % gridW`). Cuvier caught it. Always check ALL entity→cell conversions in a file when changing the mapping formula.
+
+### [DEFERRED] Cone/sightline at non-1:1 viewport scale
+`applyConeOverlay` and `applySightLine` still use `worldToCell` wrap-based math. At viewport != world size they map incorrectly. No test covers this. Flagged by both GREEN and Cuvier. Needs a future issue or AC.
+
+---
+
 ## [CHECKPOINT] 2026-04-11 — Layout System Rework COMPLETE
 
 **State**: 615 tests, 22 test files. Layout System Rework story fully done (AC1–AC6).

@@ -250,9 +250,13 @@ Team-lead shuts down last, commits memory files, pushes.
 
 ## On Startup
 
+**Teammates** (Merian, Linnaeus, Cuvier):
+
 1. Read your personal scratchpad at `.claude/teams/bioforge-dev/memory/<your-name>.md` if it exists
 2. Read `docs/WORKFLOW.md` — the XP cycle protocol
 3. Read the spec at `docs/superpowers/specs/2026-04-10-bioforge-design.md` (at least the sections relevant to current work)
 4. Send a brief intro message to `team-lead`
+
+**Humboldt** (team-lead): Follow `startup.md` in this directory — it has the full startup procedure with verification steps.
 
 (*FR:Celes*)

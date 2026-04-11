@@ -241,3 +241,103 @@ When GREEN adds the field, tsc fires TS2578 "unused @ts-expect-error directive" 
 
 [GOTCHA] 2026-04-11 — AC4: `l` key already bound to `cursorRight` in input.ts
 Linnaeus must rebind `l` to `cycleLayout` and decide how to handle the former binding.
+
+---
+
+### [CHECKPOINT] 2026-04-11 12:39 — Issue #6 RED complete
+
+RED commit: `bc6603d` — Issue #6: rasterize viewport scaling (8 RED tests)
+- 5 tests for AC1 (grid dimensions), 2 for AC3 (2× mapping), 1 for AC4 (priority in shared cell)
+- AC2 and AC5 tests pass immediately (backward compat + cell shape already satisfied)
+- All 622 pre-existing tests still pass
+
+### [CHECKPOINT] 2026-04-11 12:51 — Issue #7 RED complete
+
+RED commit: `5c3f9c5` — Issue #7: sparklines in HUD + controls panel (13 RED tests)
+- AC1.2: 3 RED — renderHud must emit sparkline chars after species count lines
+- AC2.1: 3 RED — renderControls not yet exported from hud.ts
+- AC2.2: 6 RED — [space]/[r]/[q]/[l] hints + speed display
+- AC2.3: 1 RED — chartBox label must be "Controls" not "Population" (layout.ts line 82)
+- AC1.1 + AC1.3: 10 already pass (callable + stats fields present)
+- All 637 pre-existing tests still pass
+
+[PATTERN] 2026-04-11 — `as unknown as T` cast for incompatible function types in RED
+
+When `as T` on a function triggers TS2352 ("neither type sufficiently overlaps"),
+use `as unknown as T` to force the cast. This bypasses the overlap check.
+Reserve for RED-phase type stubs only — never in production code.
+
+[GOTCHA] 2026-04-11 — Prettier pre-commit hook fires BEFORE vitest
+
+Always run `npx prettier --write tests/ui.test.ts` before committing new test blocks.
+The hook runs format-check before typecheck; a format failure kills the commit even if
+tsc and eslint pass. Also: `bioforge.config.json` (Humboldt's Issue #8 file) is covered
+by the `*.json` glob — always include it in commits if it has unformatted changes.
+
+### [CHECKPOINT] 2026-04-11 15:14 — Issue #9 RED complete
+
+RED commit: `6c65152` — Issue #9: config file loader (11 RED tests)
+- New files: `src/configLoader.ts` (stub), `tests/configLoader.test.ts`
+- AC1: reads JSON → Partial<Config>; throws on bad JSON
+- AC2: makeConfig(loadConfigFile()) produces valid Config
+- AC3: missing file returns {} (no crash)
+- AC4: JSON overrides propagate (seed:99999 test)
+- All 652 pre-existing tests still pass
+
+[PATTERN] 2026-04-11 — Widening function type for RED tests with future params
+
+When a function does not yet accept new optional params, cast it to an extended type:
+```typescript
+type RasterizeFn = (simState: S, w: number, h: number, theme: T, sel?: number, vW?: number, vH?: number) => Cell[][]
+const rasterize: RasterizeFn = rasterizeBase as RasterizeFn
+```
+TypeScript allows assigning a narrower function to a wider optional-params type, but ESLint
+`no-unnecessary-type-assertion` may still fire if TS considers the assignment valid. Use
+`as RasterizeFn` explicitly — it avoids `@ts-expect-error` and passes both tsc and ESLint.
+
+---
+
+### [WIP] 2026-04-11 12:24 — Issue #6 RED in progress (interrupted by /exit)
+
+Received TEST_SPEC from Humboldt for Issue #6 (map rescaling). Acknowledged all 5 ACs. Had NOT yet written any test code — interrupted immediately after acknowledgment.
+
+Test target: `tests/ui.test.ts` (append new describe blocks)
+Function under test: `rasterize` in `src/ui/worldView.ts`
+
+Current signature:
+```typescript
+export function rasterize(
+  simState: SimState,
+  worldW: number,
+  worldH: number,
+  theme: Theme,
+  selectedId?: number,
+): Cell[][]
+```
+
+New signature (GREEN must implement):
+```typescript
+export function rasterize(
+  simState: SimState,
+  worldW: number,
+  worldH: number,
+  theme: Theme,
+  selectedId?: number,
+  viewportW?: number,
+  viewportH?: number,
+): Cell[][]
+```
+
+ACs to test:
+1. Returns grid of exactly viewportH rows × viewportW cols
+2. viewportW=80, viewportH=30 → same output as before (identity)
+3. viewportW=160, viewportH=60 → entity at world(40,15) appears at viewport(80,30) (double scale)
+4. viewportW=40, viewportH=15 → priority rendering with shared cells (half scale)
+5. Cells have { glyph, color } shape
+
+Key fixture math to verify before writing wrap test:
+- world(40,15) at scale 2× → viewport col = floor(40 * 160 / worldW), row = floor(15 * 60 / worldH)
+- With worldW=80, worldH=30: col = floor(40*160/80) = 80, row = floor(15*60/30) = 30
+- Need to verify entity at world(39,14) → viewport(78,28) at 2× (use slightly off-center to avoid boundary)
+
+(*BF:Merian*)
