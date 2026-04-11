@@ -17,13 +17,19 @@ import { renderHud } from './ui/hud.js'
 import { makeChartHistory, updateChart, renderChart } from './ui/chart.js'
 import { renderInspector } from './ui/inspector.js'
 import { ASCII_THEME } from './ui/theme.js'
+import { applyLayout } from './ui/layouts.js'
+import type { LayoutName } from './ui/layouts.js'
 
 const cfg = defaultConfig()
-const { screen, worldBox, hudBox, chartBox, inspectorBox } = createLayout()
+const { screen, worldBox, hudBox, miniHudBox, chartBox, inspectorBox, genomeBox } = createLayout()
 const app = startApp(cfg)
 const { sim, clock } = app
 
 let chartHistory = makeChartHistory()
+
+// Layout cycling state
+const LAYOUT_ORDER: LayoutName[] = ['LAYOUT_1', 'LAYOUT_2', 'LAYOUT_ZEN', 'LAYOUT_FS']
+let layoutIndex = 0
 
 // Selection cursor state: tracks which entity index is selected for cycling
 let selectedEntityIndex = 0
@@ -74,6 +80,22 @@ bindKeys(screen, {
     app.resetSim()
     chartHistory = makeChartHistory()
     selectedEntityIndex = 0
+  },
+  cycleLayout(): void {
+    layoutIndex = (layoutIndex + 1) % LAYOUT_ORDER.length
+    const name = LAYOUT_ORDER[layoutIndex]
+    if (name !== undefined) {
+      const boxes = {
+        world: worldBox,
+        hud: hudBox,
+        miniHud: miniHudBox,
+        pop: chartBox,
+        inspector: inspectorBox,
+        genome: genomeBox,
+      }
+      applyLayout(boxes, name, 0, 0)
+    }
+    screen.render()
   },
 })
 

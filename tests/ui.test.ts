@@ -606,7 +606,6 @@ _requireKeyCallbacks({
   cursorRight: () => undefined,
   cycleSelection: () => undefined,
   resetSim: () => undefined,
-  // @ts-expect-error — cycleLayout not yet in KeyCallbacks; remove when GREEN adds it
   cycleLayout: () => undefined,
 })
 

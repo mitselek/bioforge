@@ -31,6 +31,8 @@ export interface KeyCallbacks {
   cycleSelection(): void
   /** Reset the simulation. */
   resetSim(): void
+  /** Cycle to the next UI layout. */
+  cycleLayout(): void
 }
 
 /**
@@ -44,9 +46,10 @@ export interface KeyCallbacks {
  *   up / k       → cursorUp
  *   down / j     → cursorDown
  *   left / h     → cursorLeft
- *   right / l    → cursorRight
+ *   right        → cursorRight
  *   tab          → cycleSelection
  *   r            → resetSim
+ *   l            → cycleLayout
  */
 export function bindKeys(screen: Widgets.Screen, callbacks: KeyCallbacks): void {
   screen.key('space', () => {
@@ -70,7 +73,7 @@ export function bindKeys(screen: Widgets.Screen, callbacks: KeyCallbacks): void 
   screen.key(['left', 'h'], () => {
     callbacks.cursorLeft()
   })
-  screen.key(['right', 'l'], () => {
+  screen.key('right', () => {
     callbacks.cursorRight()
   })
   screen.key('tab', () => {
@@ -78,5 +81,8 @@ export function bindKeys(screen: Widgets.Screen, callbacks: KeyCallbacks): void 
   })
   screen.key('r', () => {
     callbacks.resetSim()
+  })
+  screen.key('l', () => {
+    callbacks.cycleLayout()
   })
 }
