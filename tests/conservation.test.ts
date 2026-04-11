@@ -128,7 +128,7 @@ describe('AC4.4.10 — multi-operation sequence energy conservation', () => {
     expect(ledger.totalEnergy()).toBeCloseTo(totalBefore, 6)
 
     // Step 4: dying herbivore triggers death — entity.energy === energyEpsilon <= energyEpsilon
-    const { died, corpse } = checkDeath(dyingHerb, ledger, deadMatter, cfg)
+    const { died, corpse } = checkDeath(dyingHerb, makeRng(1), ledger, deadMatter, cfg)
     expect(died).toBe(true)
     expect(ledger.totalEnergy()).toBeCloseTo(totalBefore, 6)
 
@@ -217,7 +217,7 @@ describe('AC4.5.3 — prey with zero energy is flagged', () => {
 
     // and checkDeath should flag it
     const deadMatter = makeDeadMatterRegistry()
-    const { died } = checkDeath(herb, ledger, deadMatter, cfg)
+    const { died } = checkDeath(herb, makeRng(1), ledger, deadMatter, cfg)
     expect(died).toBe(true)
 
     expect(ledger.totalEnergy()).toBeCloseTo(200 + 0.01 + 500, 6)

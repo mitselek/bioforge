@@ -547,12 +547,11 @@ function makeLedgerV(id: number, energy: number): ReturnType<typeof makeLedger> 
 // (*BF:Merian*)
 function checkDeathV2(
   entity: Parameters<typeof checkDeathBase>[0],
-  rng: ReturnType<typeof makeRng>,
-  ledger: Parameters<typeof checkDeathBase>[1],
-  deadMatter: Parameters<typeof checkDeathBase>[2],
-  cfg10: Parameters<typeof checkDeathBase>[3],
+  rng: Parameters<typeof checkDeathBase>[1],
+  ledger: Parameters<typeof checkDeathBase>[2],
+  deadMatter: Parameters<typeof checkDeathBase>[3],
+  cfg10: Parameters<typeof checkDeathBase>[4],
 ): ReturnType<typeof checkDeathBase> {
-  // @ts-expect-error — checkDeathBase is 4-param; GREEN will add rng as 2nd param, then remove this
   return checkDeathBase(entity, rng, ledger, deadMatter, cfg10)
 }
 
