@@ -231,6 +231,31 @@ Before Humboldt hands a story to PO:
 7. Humboldt reviewed commits against spec
 8. PO explicitly accepts
 
+## Sub-Agent Delegation
+
+Teammates may spawn sub-agents via the Agent tool for mechanical or repetitive work within their own domain.
+
+### Rules
+
+1. **No `team_name` parameter** — sub-agents run in-process, no new tmux pane
+2. **Model choice:** haiku for simple tasks, sonnet for tasks needing judgment. Never opus.
+3. **File ownership inherited** — sub-agent may only touch files the parent is allowed to touch (e.g. Merian's sub-agent can only edit `tests/`)
+4. **Parent reviews output** — never commit sub-agent work blindly
+5. **No SendMessage** — sub-agents cannot message other team members. Parent coordinates.
+6. **No pipeline work** — RED/GREEN/PURPLE phases stay with the named agent. Sub-agents do grunt work (mechanical edits, searches, verification), not design decisions.
+
+### When to use
+
+- Bulk mechanical edits (updating signatures across many call sites)
+- Parallel verification (running multiple checks at once)
+- Research / exploration (reading files, searching for patterns)
+
+### When NOT to use
+
+- Writing new tests or production code (pipeline work)
+- Anything requiring architectural judgment
+- Cross-domain edits
+
 ## Scope Restriction
 
 **This team builds what the spec defines and nothing more.** If a task looks like a scope expansion beyond the spec, agents escalate to Humboldt. Humboldt escalates to PO.

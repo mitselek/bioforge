@@ -284,60 +284,48 @@ RED commit: `6c65152` — Issue #9: config file loader (11 RED tests)
 - AC4: JSON overrides propagate (seed:99999 test)
 - All 652 pre-existing tests still pass
 
-[PATTERN] 2026-04-11 — Widening function type for RED tests with future params
-
-When a function does not yet accept new optional params, cast it to an extended type:
-```typescript
-type RasterizeFn = (simState: S, w: number, h: number, theme: T, sel?: number, vW?: number, vH?: number) => Cell[][]
-const rasterize: RasterizeFn = rasterizeBase as RasterizeFn
-```
-TypeScript allows assigning a narrower function to a wider optional-params type, but ESLint
-`no-unnecessary-type-assertion` may still fire if TS considers the assignment valid. Use
-`as RasterizeFn` explicitly — it avoids `@ts-expect-error` and passes both tsc and ESLint.
-
 ---
 
-### [WIP] 2026-04-11 12:24 — Issue #6 RED in progress (interrupted by /exit)
+### [CHECKPOINT] 2026-04-11 17:55 — Issue #10 RED + follow-up complete
 
-Received TEST_SPEC from Humboldt for Issue #6 (map rescaling). Acknowledged all 5 ACs. Had NOT yet written any test code — interrupted immediately after acknowledgment.
+RED commits this session:
+- `6f50673` — Issue #10: probabilistic age-death (14 tests, AC1-AC7)
+- `ab57b64` — Wire rng through checkDeathV2 wrapper + update old tests
+- `d19d575` — Fix checkDeath call sites for 5-param signature (lifecycle + conservation)
+- `5ba4988` — Remove dead checkDeathV2 wrapper, use direct checkDeathBase calls
+- `38086de` — Issue #10 follow-up: ageDeathVariability defaults (0.2) + clamping ([0.05, 0.7])
+- `6e80c8c` — Fix 5 old tests for ageDeathVariability=0.2 default (age 900→1080)
 
-Test target: `tests/ui.test.ts` (append new describe blocks)
-Function under test: `rasterize` in `src/ui/worldView.ts`
+Total: 680 tests (676 pre-existing + 4 new RED for defaults/clamping, all passing after GREEN)
 
-Current signature:
-```typescript
-export function rasterize(
-  simState: SimState,
-  worldW: number,
-  worldH: number,
-  theme: Theme,
-  selectedId?: number,
-): Cell[][]
-```
+[LEARNED] 2026-04-11 — Wrapper functions for future signatures cause more problems than they solve
 
-New signature (GREEN must implement):
-```typescript
-export function rasterize(
-  simState: SimState,
-  worldW: number,
-  worldH: number,
-  theme: Theme,
-  selectedId?: number,
-  viewportW?: number,
-  viewportH?: number,
-): Cell[][]
-```
+The `checkDeathV2` wrapper approach (void rng, delegate to old 4-param) seemed clean but
+caused 3 rounds of coordination issues:
+1. GREEN couldn't wire rng through the wrapper (voided)
+2. Parameter indices shifted when GREEN changed the real signature
+3. conservation.test.ts had separate calls not routed through wrapper
 
-ACs to test:
-1. Returns grid of exactly viewportH rows × viewportW cols
-2. viewportW=80, viewportH=30 → same output as before (identity)
-3. viewportW=160, viewportH=60 → entity at world(40,15) appears at viewport(80,30) (double scale)
-4. viewportW=40, viewportH=15 → priority rendering with shared cells (half scale)
-5. Cells have { glyph, color } shape
+Better approach for future signature changes: use `@ts-expect-error` directly on the call
+and accept the intermediate compile state, OR have GREEN add the param as optional at the
+end so existing calls don't break. Don't build wrappers that shadow the real function.
 
-Key fixture math to verify before writing wrap test:
-- world(40,15) at scale 2× → viewport col = floor(40 * 160 / worldW), row = floor(15 * 60 / worldH)
-- With worldW=80, worldH=30: col = floor(40*160/80) = 80, row = floor(15*60/30) = 30
-- Need to verify entity at world(39,14) → viewport(78,28) at 2× (use slightly off-center to avoid boundary)
+[LEARNED] 2026-04-11 — Changing defaults breaks old tests via probabilistic ramp zone
+
+When `ageDeathVariability` defaulted to 0.2, entities at age=lifespan fell into the ramp
+zone (50% death) instead of guaranteed death. Old tests using `age=lifespan` for "must die"
+assertions became flaky/failing. Fix: use `age >= ceil(lifespan * (1 + variability))` to
+guarantee death in tests that need it.
+
+[GOTCHA] 2026-04-11 — Pre-commit hook checks ALL files, not just staged
+
+Linnaeus's uncommitted ESLint errors in `src/configLoader.ts` blocked my test-only commit.
+Workaround: `git stash push -m "msg" -- src/configLoader.ts`, commit tests, `git stash pop`.
+
+[PATTERN] 2026-04-11 — Sub-agent (haiku) for mechanical bulk edits
+
+Dispatched haiku sub-agent for 5 targeted age-value edits across 2 test files. Completed
+correctly in ~20s, saving 5 manual Edit tool calls. Good fit: simple, well-specified,
+repetitive, no judgment needed.
 
 (*BF:Merian*)

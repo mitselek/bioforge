@@ -1,0 +1,65 @@
+[
+  {
+    "from": "team-lead",
+    "text": "[2026-04-11 17:15] Quick experiment. Please spawn a sub-agent using the Agent tool — NO team_name parameter — to run `date` and report back. Use model haiku, run_in_background: true. We want to verify it runs in-process without creating a new tmux pane. Report what happens.",
+    "summary": "Test: spawn a haiku sub-agent",
+    "timestamp": "2026-04-11T14:15:10.145Z",
+    "read": true
+  },
+  {
+    "from": "team-lead",
+    "text": "[2026-04-11 17:16] Did the haiku sub-agent experiment work? No new tmux pane appeared, which looks promising. What was the result?",
+    "summary": "Report sub-agent test result",
+    "timestamp": "2026-04-11T14:15:30.269Z",
+    "read": true
+  },
+  {
+    "from": "team-lead",
+    "text": "[2026-04-11 17:22] New team policy added to common-prompt.md — **Sub-Agent Delegation**.\n\nYou may now spawn sub-agents via the Agent tool for mechanical grunt work within your own domain. Key rules:\n\n1. **No `team_name` parameter** — runs in-process, no new tmux pane\n2. **Model:** haiku for simple tasks, sonnet for judgment. Never opus.\n3. **File ownership inherited** — your sub-agent can only touch files you're allowed to touch\n4. **Review before committing** — never commit sub-agent work blindly\n5. **No SendMessage** — sub-agents can't message other team members\n6. **No pipeline work** — RED/GREEN/PURPLE stays with you. Sub-agents do mechanical edits, searches, verification.\n\nGood for: bulk signature updates, parallel checks, research. Re-read the full section in common-prompt.md when you have a moment.",
+    "summary": "New team policy: sub-agent delegation",
+    "timestamp": "2026-04-11T14:21:24.803Z",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "[2026-04-11 17:22]\n\n## Green Handoff\n- Story: Issue #10\n- Test case: AC1-AC7 (all 14 new tests)\n- Files changed: `src/core/config.ts`, `src/core/genome.ts`, `src/core/lifecycle.ts`, `src/core/sim.ts`\n- Test result: PASS (676 tests green across 23 files, including 5000-tick fuzz)\n- Commit: `51cd33c` (implementation), `d3216f0` (config+genome prep)\n\n### Implementation notes\n\n1. **`ageDeathVariability` defaults set to 0, not 0.2.** Old Story 4.3 tests use `defaultConfig()` and expect hard cutoff at `age >= lifespan`. With variability=0.2, age=900/lifespan=900 falls in the ramp zone at p=0.5, and `makeRng(1).float()` = 0.627 (fails the < 0.5 check). Setting defaults to 0 preserves backward compat. New Issue #10 tests explicitly pass their own variability via `makeVariabilityConfig()`. Whether production defaults should be 0.2 is a design decision for Humboldt.\n\n2. **`rng` param is non-optional (`Rng`, not `Rng | undefined`).** Merian updated all call sites (old + new) to pass `makeRng(seed)`. Simpler than optional — no need for fallback logic.\n\n3. **No `clamp` on `ageDeathVariability` in the ramp.** If someone passes variability > 1, `lower` goes negative. No validation added — minimum code. Cuvier or Humboldt may want a clamp.\n\n4. **`mutateStats` drifts `ageDeathVariability` with lognormal.** Could drift above 1 over many generations. No clamp added — same pattern as other stats. May want `clamp(0, 1)` if that's a concern.\n\n5. **`let ageDeath` with if/else-if/else chain.** Could be a ternary or extracted function but this is the minimum readable form.",
+    "summary": "GREEN_HANDOFF Issue #10 probabilistic age-death",
+    "timestamp": "2026-04-11T14:22:42.971Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "team-lead",
+    "text": "[2026-04-11 17:23] Linnaeus sent you a GREEN_HANDOFF for Issue #10 (probabilistic age-death ramp). Commit 51cd33c, all 676 tests pass. Please begin PURPLE phase.",
+    "summary": "GREEN_HANDOFF waiting — start PURPLE",
+    "timestamp": "2026-04-11T14:22:58.438Z",
+    "read": true
+  },
+  {
+    "from": "team-lead",
+    "text": "[2026-04-11 17:26] New reporting requirement for this session: include sub-agent usage in your handoff reports. For each handoff, add:\n\n- **Sub-agent uses:** count (or 0)\n- **Assessment:** what worked, what didn't, was it worth the tokens\n\nThis helps us evaluate whether sub-agent delegation is earning its keep. Applies to all handoff messages (RED→GREEN, GREEN→PURPLE, PURPLE→Lead) for the rest of this session.",
+    "summary": "Track sub-agent usage in handoff reports",
+    "timestamp": "2026-04-11T14:26:18.823Z",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "[2026-04-11 17:44]\n\n## Green Handoff\n- Story: Issue #10 (follow-up — defaults + clamping)\n- Test case: 4 new tests across config, genome, configLoader\n- Files changed: `src/core/config.ts`, `src/core/genome.ts`, `src/configLoader.ts`\n- Test result: PASS (680 tests green across 23 files, including 5000-tick fuzz)\n- Commit: `d1aaf49`\n\n### Implementation notes\n\n1. **Defaults changed from 0 to 0.2** for all four species. Straightforward.\n\n2. **genome.ts clamp uses existing `clamp` local** — `clamp(parent.ageDeathVariability * driftFactor(), 0.05, 0.7)`. Same pattern as `efficiency` clamp on line 243. No new code needed beyond the single line.\n\n3. **configLoader.ts rewritten to work with `unknown`** — the original approach used `as Partial<Config>` early, then tried to guard with `!== undefined` checks that ESLint flagged as unnecessary (TypeScript's `Record<Species, SpeciesStats>` says all keys exist). Rewrote to process the raw `JSON.parse` result as `Record<string, unknown>`, clamp any species entry that has a numeric `ageDeathVariability`, then cast to `Partial<Config>` at the end. This is type-honest and ESLint-clean.\n\n4. **Clamping is NOT in `makeConfig`** — only in `loadConfigFile` and `mutateStats`. Programmatic `makeConfig({...ageDeathVariability: 0})` preserves the passed value, which is needed by the AC4 backward-compat tests. This is a deliberate design split: user-file input gets sanitized, code-level callers are trusted.\n\n5. **Magic numbers 0.05 and 0.7** appear in three places: genome.ts clamp, configLoader.ts clamp, and the tests. Could be a config constant. Minimum code — left as literals.\n\n### Sub-agent uses: 0\n### Assessment: N/A",
+    "summary": "GREEN_HANDOFF defaults + clamping follow-up",
+    "timestamp": "2026-04-11T14:44:57.442Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "team-lead",
+    "text": "{\"type\":\"shutdown_request\",\"requestId\":\"shutdown-1775919326415@cuvier\",\"from\":\"team-lead\",\"reason\":\"Session complete. Write your scratchpad, then send closing report with [LEARNED], [DEFERRED], [WARNING], [UNADDRESSED] (1 bullet each, max). Approve shutdown.\",\"timestamp\":\"2026-04-11T14:55:26.415Z\"}",
+    "timestamp": "2026-04-11T14:55:26.415Z",
+    "read": true
+  },
+  {
+    "from": "team-lead",
+    "text": "{\"type\":\"permission_response\",\"request_id\":\"perm-1775919374544-x5n11ra\",\"subtype\":\"success\",\"response\":{\"updated_input\":{\"file_path\":\"/home/michelek/Documents/github/mitselek/projects/bioforge/.claude/teams/bioforge-dev/memory/cuvier.md\",\"content\":\"# Cuvier — PURPLE Scratchpad\\n\\n## [CHECKPOINT] 2026-04-11 17:55 — Session End (Issue #10 Probabilistic Age-Death)\\n\\n### Project State\\n- **Tests:** 680 across 23 test files\\n- **Fuzz:** 10 seeds x 5000 ticks = 50,000 tick-assertions passing\\n- **Core simulation:** Energy conservation proven under fuzz with probabilistic age-death active (defaults 0.2).\\n\\n### Session Summary (Issue #10 — Probabilistic Age-Death)\\n- **2 cycles reviewed**, both ACCEPTED on first pass (0 rejections)\\n- **0 refactor commits** — both implementations were clean\\n- Cycle 1: Age-death ramp logic (commit `51cd33c`, 14 new tests, 676 total)\\n- Cycle 2: Defaults changed to 0.2 + clamping in genome.ts + configLoader.ts (commit `d1aaf49`, 4 new tests, 680 total)\\n\\n### [LEARNED] Sub-Agent Delegation Policy (2026-04-11)\\nEstablished this session. Agent tool without `team_name` runs in-process (no tmux pane). Haiku for simple tasks, sonnet for judgment, never opus. Must report sub-agent usage in handoff messages. Tested successfully with a haiku sub-agent running `date` (2.8s, 27k tokens).\\n\\n### [LEARNED] ageDeathVariability Design Split (2026-04-11)\\n`makeConfig` trusts code-level callers (tests need variability=0). `loadConfigFile` and `mutateStats` apply clamping [0.05, 0.7]. Magic numbers 0.05/0.7 in genome.ts and configLoader.ts — not centralized (cross-module = escalation territory).\\n\\n### [PATTERN] Linnaeus Code Quality\\nLinnaeus's code has been consistently clean across both Issue #10 handoffs. Both cycles were single-pass ACCEPTs. The `checkDeath` ramp logic, config additions, and genome mutation all followed existing patterns precisely.\\n\\n### Open Issues for Next Session\\n- **#6** — Map rescaling to fill panel\\n- **#7** — Sparklines into HUD + Controls panel\\n\\n### [DEFERRED] pop/chartBox Naming Mismatch\\n`LayoutConfig` (layouts.ts) uses panel key `pop`. `Layout` (layout.ts) uses field `chartBox`. Bridged via `pop: chartBox` in the boxes mapping. Humboldt deferred this — not blocking but inconsistent.\\n\\n### [DEFERRED] Lifespan/MaturityAge Clamp — 3 Instances (Escalation Pending)\\nEscalated to humboldt, no decision yet. Locations:\\n1. `processReproduction` (lifecycle.ts:93-97)\\n2. `tryCompostSpawn` (plants.ts:74-78)\\n3. `seedState` in `makeSim` (sim.ts:66-69)\\nRecommended: extract to entity.ts as `randomLifecycleParams(...)`.\\n\\n### [DEFERRED] SimState Dead Matter Gap\\nSimState does not expose dead matter (corpses, compost, poop). Spec §13.2 priority layers 3-5 cannot render. Needs SimState extension.\\n\\n### [GOTCHA] Blessed CJS/ESM Import Bug\\n`blessed` is CJS-only. In the ESM project, `import * as blessed from 'blessed'` works in `src/ui/layout.ts`, but `src/main.ts` uses `require('blessed')` behind a TTY guard. Intentional — blessed crashes without TTY.\\n\\n### [PATTERN] Review Workflow (Refined)\\n1. Verify HEAD matches handoff SHA\\n2. Run ALL gates independently (vitest, tsc, eslint, prettier, coverage)\\n3. Read implementation + tests + verify against spec/config values\\n4. Walk bounded-scope checklist: names, extract/inline, duplication, internal types, logic simplification\\n5. Commit if refactor needed, or report \\\"nothing to refactor\\\"\\n6. Send PURPLE_VERDICT to linnaeus, CYCLE_COMPLETE to humboldt\\n7. Include sub-agent usage report in all handoffs\\n\\n### [LEARNED] Key Patterns (Accumulated)\\n\\n**Dual-Write Sub-Accounting:** wasteBuffer is an accounting label within the entity pool, not a separate ledger pool. Sub-accounting fields must always check the authoritative ledger balance before transferring.\\n\\n**Epsilon Alignment:** Ledger epsilon and config energyEpsilon must match. Fixed by passing cfg.energyEpsilon to makeLedger.\\n\\n**JSDoc Misplacement:** GREEN tends to insert new functions between an existing JSDoc and its function. Watch for in every review.\\n\\n**Coverage Gap Categories:** Category 2 (defense-in-depth guards) is dominant — zero-amount guards, probability-dependent branches.\\n\\n(*BF:Cuvier*)\\n\"},\"permission_updates\":[{\"type\":\"addRules\",\"rules\":[{\"toolName\":\"Edit\",\"ruleContent\":\"/.claude/**\"}],\"behavior\":\"allow\",\"destination\":\"session\"}]}}",
+    "timestamp": "2026-04-11T14:59:29.502Z",
+    "read": true
+  }
+]

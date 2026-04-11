@@ -1,0 +1,98 @@
+[
+  {
+    "from": "merian",
+    "text": "[2026-04-11 16:57] RED handoff for Issue #10 — Probabilistic age-death with variability window.\n\n**Commit:** `6f50673`\n**Test file:** `tests/lifecycle.test.ts` (lines 476-727)\n**Failing test:** AC3 — `death rate is between 35% and 65% at mid-ramp age=900` (`expected 1 to be less than 0.65`)\n\n## What the tests assert\n\n14 new `it()` blocks covering 7 ACs:\n\n- **AC1:** Entity at age 719 (below lower=720) does NOT die from age\n- **AC2:** Entity at age 1080 or 1200 (at/above upper=1080) ALWAYS dies\n- **AC3:** 1000 trials at midpoint age=900 — death rate must be 35-65% (currently 100% due to hard cutoff) ← **the one failing test**\n- **AC4:** `ageDeathVariability=0` behaves like old hard cutoff (backward compat)\n- **AC5:** Starvation death unaffected by variability\n- **AC6:** Energy conservation holds on probabilistic death\n- **AC7:** `makeConfig` accepts `ageDeathVariability` values 0, 0.5, 1\n\n## What must change in `src/`\n\n1. **`src/core/config.ts`** — Add `ageDeathVariability: number` to `SpeciesStats` interface + defaults per species (e.g., 0.2)\n2. **`src/core/lifecycle.ts`** — Add optional `rng` parameter to `checkDeath`. Replace `entity.age >= entity.lifespan` with the probabilistic ramp:\n   ```\n   lower = lifespan * (1 - ageDeathVariability)\n   upper = lifespan * (1 + ageDeathVariability)\n   age < lower  → no age death\n   lower <= age < upper → p = (age - lower) / (upper - lower); rng.float() < p → dies\n   age >= upper → guaranteed death\n   ```\n3. **`src/core/sim.ts`** — Pass `rng` to `checkDeath` call sites\n\n## Key details\n\n- Tests use a `checkDeathV2` wrapper (line 555) that passes `rng` as 2nd param but currently `void`s it and delegates to old `checkDeathBase`. When you add `rng` to `checkDeath`, update the wrapper to pass it through (or replace wrapper with direct call).\n- Existing Story 4.3 tests (lines 1-473) call 4-param `checkDeathBase`. Make `rng` optional so those don't break.\n- `@ts-expect-error` on line 530 forces you to add `ageDeathVariability` to `SpeciesStats` — remove the annotation once you do.\n- AC3 uses `makeRng(seed)` per trial (seed 0-999) for deterministic statistical test.\n\n## Spec reference\n\nIssue #10 on GitHub. Spec §5.3 (death conditions).",
+    "summary": "RED handoff Issue #10 — probabilistic age-death",
+    "timestamp": "2026-04-11T13:57:36.255Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "team-lead",
+    "text": "[2026-04-11 16:58] Merian sent you a RED handoff for Issue #10 (probabilistic age-death). Check your inbox and begin GREEN phase.",
+    "summary": "Check inbox — RED handoff waiting",
+    "timestamp": "2026-04-11T13:58:12.342Z",
+    "read": true
+  },
+  {
+    "from": "team-lead",
+    "text": "[2026-04-11 17:14] Your config.ts change added `ageDeathVariability` to `SpeciesStats` but `mutateStats()` in `src/core/genome.ts:235` doesn't return it. tsc fails and Merian can't commit her test updates.\n\nQuick fix: add `ageDeathVariability: parent.ageDeathVariability * driftFactor()` to the return block in `genome.ts:235`. Commit, then notify Merian.",
+    "summary": "Fix genome.ts:235 — Merian blocked on tsc",
+    "timestamp": "2026-04-11T14:15:03.820Z",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "[2026-04-11 17:16] Test update committed as `ab57b64`. You're unblocked.\n\n**What changed:**\n- `checkDeathV2` wrapper now passes `rng` through: `return checkDeathBase(entity, rng, ledger, deadMatter, cfg10)` (with `@ts-expect-error` at line 556)\n- ALL `checkDeath` calls (old Story 4.3 + Issue #10) go through `checkDeathV2`\n- Removed stale `@ts-expect-error` on `ageDeathVariability`\n\n**Your next step:** Add `rng: Rng` as 2nd parameter to `checkDeath()` in `src/core/lifecycle.ts`. When you do:\n1. The `@ts-expect-error` at test line 556 becomes unused → remove it\n2. Implement the probabilistic ramp (see my earlier handoff for the formula)\n3. Update `sim.ts` call sites to pass `rng`",
+    "summary": "Tests committed, Linnaeus unblocked",
+    "timestamp": "2026-04-11T14:16:21.325Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "[2026-04-11 17:20] Fixed — commit `d19d575`:\n\n1. `checkDeathV2` wrapper: Parameter indices shifted to `[2]`/`[3]`/`[4]`, removed stale `@ts-expect-error`\n2. `conservation.test.ts`: added `makeRng(1)` as 2nd arg at lines 131 and 220\n\ntsc + ESLint clean. You should be fully unblocked now.",
+    "summary": "Test call sites fixed, Linnaeus unblocked",
+    "timestamp": "2026-04-11T14:20:59.821Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "team-lead",
+    "text": "[2026-04-11 17:22] New team policy added to common-prompt.md — **Sub-Agent Delegation**.\n\nYou may now spawn sub-agents via the Agent tool for mechanical grunt work within your own domain. Key rules:\n\n1. **No `team_name` parameter** — runs in-process, no new tmux pane\n2. **Model:** haiku for simple tasks, sonnet for judgment. Never opus.\n3. **File ownership inherited** — your sub-agent can only touch files you're allowed to touch\n4. **Review before committing** — never commit sub-agent work blindly\n5. **No SendMessage** — sub-agents can't message other team members\n6. **No pipeline work** — RED/GREEN/PURPLE stays with you. Sub-agents do mechanical edits, searches, verification.\n\nGood for: bulk signature updates, parallel checks, research. Re-read the full section in common-prompt.md when you have a moment.",
+    "summary": "New team policy: sub-agent delegation",
+    "timestamp": "2026-04-11T14:21:24.800Z",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "[2026-04-11 17:25]\n\n## Purple Verdict\n- Story: Issue #10\n- Test case: AC1-AC7 (14 tests)\n- Verdict: ACCEPT\n- Rejection count: 0\n\n### Changes made\nNone — implementation is clean. \"Nothing to do here\" is the valid PURPLE outcome.\n\nThe age-death ramp logic in `checkDeath` (lifecycle.ts:45-57) is well-structured: clear variable names, correct edge case handling for variability=0, readable if/else chain. Config and genome additions follow existing patterns exactly. No duplication, no unclear naming, no logic to simplify.\n\n### Notes\n- The `checkDeathV2` wrapper in tests (lifecycle.test.ts:548-556) is now dead scaffolding — it just delegates to `checkDeathBase`. Merian may want to clean this up.\n- Final commit: `51cd33c` (no PURPLE commit needed)\n\n(*BF:Cuvier*)",
+    "summary": "PURPLE_VERDICT: ACCEPT Issue #10",
+    "timestamp": "2026-04-11T14:25:16.988Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "team-lead",
+    "text": "[2026-04-11 17:26] New reporting requirement for this session: include sub-agent usage in your handoff reports. For each handoff, add:\n\n- **Sub-agent uses:** count (or 0)\n- **Assessment:** what worked, what didn't, was it worth the tokens\n\nThis helps us evaluate whether sub-agent delegation is earning its keep. Applies to all handoff messages (RED→GREEN, GREEN→PURPLE, PURPLE→Lead) for the rest of this session.",
+    "summary": "Track sub-agent usage in handoff reports",
+    "timestamp": "2026-04-11T14:26:18.822Z",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "[2026-04-11 17:33] RED handoff — Issue #10 follow-up: ageDeathVariability defaults + clamping.\n\n**Commit:** `38086de`\n**4 failing tests across 3 files:**\n\n### 1. `tests/config.test.ts` — defaults\n- `all four species default ageDeathVariability to 0.2`\n- Currently 0 → needs changing to 0.2 in `defaultConfig()` (`src/core/config.ts`)\n\n### 2. `tests/genome.test.ts` — mutateStats clamping\n- `clamps ageDeathVariability to [0.05, 0.7] after drift`\n- Uses 100 seeds with sigma=5.0 (huge drift). Currently no clamp → value hits 0.\n- Add `clamp(parent.ageDeathVariability * driftFactor(), 0.05, 0.7)` in `mutateStats()` at `src/core/genome.ts:252`\n\n### 3. `tests/configLoader.test.ts` — config loader clamping\n- `ageDeathVariability below 0.05 is clamped to 0.05` (file has 0.01 → expects 0.05)\n- `ageDeathVariability above 0.7 is clamped to 0.7` (file has 0.95 → expects 0.7)\n- Add clamping in `makeConfig()` or `loadConfigFile()` when processing species overrides\n\n### What must change in `src/`\n\n1. **`src/core/config.ts`** — change all 4 `ageDeathVariability` defaults from `0` to `0.2`\n2. **`src/core/genome.ts:252`** — clamp `ageDeathVariability` after drift: `clamp(..., 0.05, 0.7)`\n3. **`src/core/config.ts` or `src/configLoader.ts`** — clamp user-provided `ageDeathVariability` to [0.05, 0.7]\n\n676 pre-existing tests still pass.\n\n**Sub-agent uses:** 0\n**Assessment:** N/A",
+    "summary": "RED handoff — defaults + clamping tests",
+    "timestamp": "2026-04-11T14:33:19.510Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "[2026-04-11 17:40] Fixed — commit `6e80c8c`. 5 old tests updated for ageDeathVariability=0.2:\n\n- lifecycle.test.ts: 4 tests — age 900→1080 (above upper bound)\n- conservation.test.ts: 1 test — `dyingHerb.age = ceil(lifespan * 1.2)`\n\nAll 47 tests in lifecycle + conservation pass. You're unblocked.\n\n**Note:** Your `src/configLoader.ts` has 4 ESLint errors (`@typescript-eslint/no-unnecessary-condition` on lines 28-35). I had to stash it to get my commit through. Please fix before your next commit.\n\n**Sub-agent uses:** 1 (haiku — mechanical age value edits across 2 files)\n**Assessment:** Worked well. 5 targeted edits done correctly in ~20s, saved me 5 manual Edit calls.",
+    "summary": "5 old tests fixed, Linnaeus unblocked",
+    "timestamp": "2026-04-11T14:41:08.799Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "[2026-04-11 17:46]\n\n## Purple Verdict\n- Story: Issue #10 (follow-up — defaults + clamping)\n- Test case: 4 new tests (config, genome, configLoader)\n- Verdict: ACCEPT\n- Rejection count: 0\n\n### Changes made\nNone — implementation is clean. \"Nothing to do here\" is the valid PURPLE outcome.\n\nThe genome.ts clamp follows the same pattern as `efficiency` (line 243). configLoader.ts uses a type-honest `unknown`-first approach — defensive parsing with boundary cast only at the end. The design split (clamping in file-loader + mutation, not in `makeConfig`) is sound. Magic numbers 0.05/0.7 are self-documenting in context.\n\n### Sub-agent uses: 0\n### Assessment: N/A — straightforward review, no mechanical work to delegate.\n\nFinal commit: `d1aaf49` (no PURPLE commit needed)\n\n(*BF:Cuvier*)",
+    "summary": "PURPLE_VERDICT: ACCEPT defaults+clamping",
+    "timestamp": "2026-04-11T14:46:25.715Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "team-lead",
+    "text": "{\"type\":\"shutdown_request\",\"requestId\":\"shutdown-1775919325764@linnaeus\",\"from\":\"team-lead\",\"reason\":\"Session complete. Write your scratchpad, then send closing report with [LEARNED], [DEFERRED], [WARNING], [UNADDRESSED] (1 bullet each, max). Approve shutdown.\",\"timestamp\":\"2026-04-11T14:55:25.764Z\"}",
+    "timestamp": "2026-04-11T14:55:25.764Z",
+    "read": true
+  },
+  {
+    "from": "team-lead",
+    "text": "{\"type\":\"permission_response\",\"request_id\":\"perm-1775919378938-gy9u2p8\",\"subtype\":\"success\",\"response\":{\"updated_input\":{\"file_path\":\"/home/michelek/Documents/github/mitselek/projects/bioforge/.claude/teams/bioforge-dev/memory/linnaeus.md\",\"content\":\"# Linnaeus — GREEN scratchpad\\n\\n## [CHECKPOINT] 2026-04-11 — Issue #10 probabilistic age-death COMPLETE\\n\\n**State**: 680 tests, 23 test files. Issue #10 done — probabilistic age-death ramp + defaults + clamping.\\n**HEAD**: d1aaf49 (defaults 0.2 + clamping follow-up)\\n\\n| AC | Files | Commit | Result |\\n|----|-------|--------|--------|\\n| AC1-AC7 (ramp) | `src/core/lifecycle.ts`, `src/core/sim.ts` | 51cd33c | checkDeath probabilistic ramp |\\n| config prep | `src/core/config.ts`, `src/core/genome.ts` | d3216f0 | ageDeathVariability field + mutateStats |\\n| defaults+clamp | `src/core/config.ts`, `src/core/genome.ts`, `src/configLoader.ts` | d1aaf49 | defaults 0.2, clamp [0.05, 0.7] |\\n\\n### [GOTCHA] ageDeathVariability defaults break old tests\\nChanging defaults from 0 to 0.2 makes old Story 4.3 tests probabilistic at age=lifespan boundary. `makeRng(1).float()` = 0.627, which fails `< 0.5` check in ramp zone. Merian had to update old tests to use age >= upper bound (1080). Always check ripple effects when changing defaults that affect probabilistic behavior.\\n\\n### [GOTCHA] configLoader.ts must use `unknown`-first parsing\\nESLint `@typescript-eslint/no-unnecessary-condition` fires when you guard `sp.plant !== undefined` because `Record<Species, SpeciesStats>` types all keys as present. But JSON.parse returns untyped data — runtime species may be partial. Solution: parse as `Record<string, unknown>`, process, then cast to `Partial<Config>` at the end.\\n\\n### [GOTCHA] makeConfig vs loadConfigFile clamping split\\nClamping ageDeathVariability in `makeConfig` breaks AC4 (variability=0 backward compat). Clamping only in `loadConfigFile` + `mutateStats` preserves programmatic callers while sanitizing user-file input. This is a deliberate design split.\\n\\n### [PATTERN] checkDeath now takes 5 params\\n`checkDeath(entity, rng, ledger, deadMatter, cfg)` — rng is required (non-optional). All call sites (tests + sim.ts) pass rng explicitly.\\n\\n### [DEFERRED] Magic numbers 0.05 and 0.7\\nageDeathVariability clamp bounds appear in genome.ts, configLoader.ts, and tests. Could be named constants. Cuvier noted as acceptable for now.\\n\\n---\\n\\n## [CHECKPOINT] 2026-04-11 — Issue #9 config file loader COMPLETE\\n\\n**State**: 663 tests, 23 test files. Issue #9 done — loadConfigFile + run.ts wired.\\n**HEAD**: 11f4962 (Cuvier JSDoc cleanup after 3021458)\\n\\n| AC | Files | Commit | Result |\\n|----|-------|--------|--------|\\n| AC1–AC4 | `src/configLoader.ts`, `src/run.ts` | 3021458 | loadConfigFile impl + run.ts wiring |\\n| PURPLE | `src/configLoader.ts` | 11f4962 | JSDoc stub text removed |\\n\\n### [GOTCHA] Flaky perf test in physics.test.ts\\n`physics.test.ts:117` — \\\"handles 1000 entities and 1000 queries in under 100ms\\\" — consistently timing out at ~363ms on this machine. Pre-existing, not caused by any Issue #6–9 work. Confirmed by Cuvier. Humboldt to decide whether to raise the threshold or skip.\\n\\n---\\n\\n## [CHECKPOINT] 2026-04-11 — Issue #7 sparklines + controls COMPLETE\\n\\n**State**: 650 tests, 22 test files. Issue #7 done — sparklines in HUD, renderControls exported.\\n**HEAD**: 2a76205 (Cuvier accepted, no refactor needed)\\n\\n| AC | Files | Commit | Result |\\n|----|-------|--------|--------|\\n| AC1.2 + AC2.1-3 | `src/ui/hud.ts`, `src/ui/layout.ts`, `src/run.ts` | 2a76205 | sparklines + controls |\\n\\n### [GOTCHA] Private function duplication when can't export\\n`chart.ts`'s `sparkline()` is private. Duplicated as `miniSparkline()` in hud.ts — intentional GREEN minimum. Cuvier escalated to Humboldt: if `sparkline` is exported from chart.ts, hud.ts can import it instead.\\n\\n### [DEFERRED] `renderChart` is dead code\\nNo callers in `src/` after run.ts switched to `renderControls`. Exported but unused. Cuvier noted — Humboldt to decide whether to remove.\\n\\n---\\n\\n## [CHECKPOINT] 2026-04-11 — Issue #6 viewport scaling COMPLETE\\n\\n**State**: 630 tests, 22 test files. Issue #6 done — viewport scaling in rasterize.\\n**HEAD**: 9321548 (Cuvier's align commit after d091e76)\\n\\n| AC | Files | Commit | Result |\\n|----|-------|--------|--------|\\n| AC1–AC4 | `src/ui/worldView.ts`, `src/run.ts` | d091e76 | viewport params + scaling formula |\\n| PURPLE | `src/ui/worldView.ts` | 9321548 | selected entity highlight formula aligned |\\n\\n### [GOTCHA] Two entity-to-cell mapping paths in worldView.ts\\nMain paint loop and selected-entity highlight must use the SAME formula. Always check ALL entity→cell conversions in a file when changing the mapping formula.\\n\\n### [DEFERRED] Cone/sightline at non-1:1 viewport scale\\n`applyConeOverlay` and `applySightLine` still use `worldToCell` wrap-based math. At viewport != world size they map incorrectly. No test covers this.\\n\\n---\\n\\n## [CHECKPOINT] 2026-04-11 — Layout System Rework COMPLETE\\n\\n**State**: 615 tests, 22 test files. Layout System Rework story fully done (AC1–AC6).\\n**HEAD**: 67416d1 (feat(run): wire genome panel + mini HUD + layout apply per frame)\\n\\n| AC | Files | Commit | Result |\\n|----|-------|--------|--------|\\n| AC1 | `src/ui/layouts.ts` | d17524f | LAYOUTS registry + applyLayout |\\n| AC2 | `src/ui/inspector.ts` | 3fc251d | renderGenome extracted |\\n| AC3 | `src/ui/layout.ts` | eba5200 | 6 boxes, LAYOUT_1 default |\\n| AC4 | `src/ui/input.ts`, `src/run.ts` | ae0e5a3 | cycleLayout, l key |\\n| AC5 | `src/ui/hud.ts` | 3bf8f37 | renderMiniHud |\\n| AC6 | `src/run.ts` | 67416d1 | full wiring |\\n\\n### [GOTCHA] JSDoc detachment on insertion\\nWhen inserting a new function before an existing one, the existing JSDoc block stays above the new function and detaches from its intended target. Always insert NEW functions AFTER the complete JSDoc+function block of the one above.\\n\\n---\\n\\n## [PATTERN] Established GREEN patterns\\n\\n### Dual-write invariant\\nEvery energy transfer requires both:\\n1. `ledger.transfer(from, to, amount)` — keeps ledger balanced\\n2. `entity.field += amount` / `entity.field -= amount` — keeps struct in sync\\n\\n### Zero-guard early return\\n`if (eaten === 0) return` / `if (actual === 0) return` — skip ledger call when nothing moves.\\n\\n### Gaussian lifespan clamp — 3 instances\\n`processReproduction` (lifecycle.ts), `tryCompostSpawn` (plants.ts), `seedState` (sim.ts). If a 4th appears, escalate to Humboldt for a shared helper.\\n\\n### Prettier always needs a pass after edits\\nLong lines require `npx prettier --write` before commit. Pre-commit hook catches it.\\n\"},\"permission_updates\":[{\"type\":\"addRules\",\"rules\":[{\"toolName\":\"Edit\",\"ruleContent\":\"/.claude/**\"}],\"behavior\":\"allow\",\"destination\":\"session\"}]}}",
+    "timestamp": "2026-04-11T14:59:31.092Z",
+    "read": true
+  }
+]

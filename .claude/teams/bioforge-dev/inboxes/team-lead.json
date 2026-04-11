@@ -1,0 +1,538 @@
+[
+  {
+    "from": "merian",
+    "text": "[2026-04-11 16:42] Merian (RED) reporting in. Scratchpad loaded — last session ended at Issue #9 RED complete (652+ tests, config file loader). Read common-prompt and WORKFLOW.md. Standing by for TEST_SPEC.",
+    "summary": "Merian ready, standing by for TEST_SPEC",
+    "timestamp": "2026-04-11T13:43:04.678Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"merian\",\"timestamp\":\"2026-04-11T13:43:07.491Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T13:43:07.491Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "[2026-04-11 16:43] Linnaeus (GREEN) online. Read common-prompt, WORKFLOW.md, and my scratchpad.\n\n**Status from scratchpad:** Issues #6, #7, #9 all completed through full RED→GREEN→PURPLE cycles. HEAD at 11f4962. 663 tests across 23 files.\n\n**Known issues carried forward:**\n- Flaky perf test in physics.test.ts:117 (~363ms vs 100ms threshold) — pre-existing, awaiting your decision\n- `renderChart` is dead code after run.ts switched to `renderControls` — awaiting your decision\n- `miniSparkline` duplication in hud.ts (could import from chart.ts if exported) — awaiting your decision\n\nReady to receive failing tests from Merian. Standing by.",
+    "summary": "Linnaeus GREEN reporting for duty",
+    "timestamp": "2026-04-11T13:44:09.552Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"linnaeus\",\"timestamp\":\"2026-04-11T13:44:12.772Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T13:44:12.772Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "[2026-04-11 16:44] Cuvier (PURPLE) reporting in.\n\nStartup complete — read common-prompt, WORKFLOW.md, and design spec. No prior scratchpad found (fresh session).\n\nReady to receive GREEN_HANDOFF from Linnaeus. Standing by.",
+    "summary": "Cuvier (PURPLE) online and ready",
+    "timestamp": "2026-04-11T13:44:41.058Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"cuvier\",\"timestamp\":\"2026-04-11T13:44:42.884Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T13:44:42.884Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"linnaeus\",\"timestamp\":\"2026-04-11T13:53:16.833Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T13:53:16.833Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"cuvier\",\"timestamp\":\"2026-04-11T13:53:42.949Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T13:53:42.949Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "[2026-04-11 16:56] Issue #10 RED review complete. Found and fixed a structural problem: the AC3 test wasn't passing `rng` to `checkDeath`, which would have blocked GREEN from making it pass.\n\n**Fix:** Added `checkDeathV2` wrapper matching the new 5-param signature (entity, rng, ledger, dm, cfg). All 10 Issue #10 call sites now pass `rng`. Wrapper currently `void`s rng and delegates to old 4-param `checkDeathBase`.\n\n**All 8 RED gates pass:**\n- 1 failing test (AC3: rate=1.0 > 0.65 — hard cutoff instead of probabilistic ramp)\n- 39 pre-existing tests pass\n- tsc, ESLint clean\n\n**Note:** Story 4.3 tests (lines 1-473) still use old 4-param `checkDeathBase`. GREEN should add `rng` as optional so those compile. AC4 cycle updates them later.\n\nReady to commit and hand off to Linnaeus. Awaiting your go-ahead.",
+    "summary": "Issue #10 RED fixed and verified, ready to commit",
+    "timestamp": "2026-04-11T13:56:50.136Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"merian\",\"timestamp\":\"2026-04-11T13:56:53.794Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T13:56:53.794Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "[2026-04-11 16:57] RED committed as `6f50673`, handed off to Linnaeus with full details. Standing by.",
+    "summary": "RED committed and handed off to Linnaeus",
+    "timestamp": "2026-04-11T13:57:40.115Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"merian\",\"timestamp\":\"2026-04-11T13:57:42.345Z\",\"idleReason\":\"available\",\"summary\":\"[to linnaeus] RED handoff Issue #10 — probabilistic age-death\"}",
+    "timestamp": "2026-04-11T13:57:42.345Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "[2026-04-11 16:58] Both already done — may have crossed in transit.\n\n1. **Commit:** `6f50673` — `test(lifecycle): RED — Issue #10 probabilistic age-death (14 tests)` (verified on HEAD)\n2. **Handoff to Linnaeus:** sent with full details — test file path, all 7 ACs explained, 3 src/ files to change, wrapper details, and spec reference.\n\nStanding by for next task.",
+    "summary": "Commit and handoff already completed, confirmed",
+    "timestamp": "2026-04-11T13:58:00.340Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"merian\",\"timestamp\":\"2026-04-11T13:58:03.392Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T13:58:03.392Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "[2026-04-11 17:07] **ESCALATION — Issue #10 GREEN blocked on test file ownership**\n\n**Problem:** The test file `tests/lifecycle.test.ts` has a `checkDeathV2` wrapper (line 549-558) that currently `void`s the `rng` parameter and delegates to the old 4-param `checkDeathBase`. Merian's handoff note says \"When GREEN updates checkDeath to accept rng, replace this wrapper with the real import.\" But I cannot edit test files — that's Merian's domain.\n\n**Why this blocks GREEN:**\n1. If I change `checkDeath` to a 5-param signature `(entity, rng, ledger, deadMatter, cfg)`, the old tests (lines 1-473) calling `checkDeathBase(entity, ledger, dm, cfg)` with 4 params won't compile.\n2. If I use function overloads to support both 4-param and 5-param, the wrapper still calls the 4-param path (no rng), so AC3's statistical test gets 100% death rate instead of 35-65%. Fails.\n3. The wrapper's parameter types use `Parameters<typeof checkDeathBase>[N]` — changing the signature shifts all the indices.\n\n**What I've done so far:**\n- Added `ageDeathVariability: number` to `SpeciesStats` interface in config.ts ✓\n- Added defaults (0.2) for all four species ✓\n- Reverted lifecycle.ts and sim.ts to keep codebase compilable\n\n**What I need:** Merian needs to update the `checkDeathV2` wrapper to pass `rng` through to `checkDeath`, OR remove the wrapper and import the real 5-param `checkDeath` directly. Then I can implement the probabilistic ramp in lifecycle.ts.\n\n**Alternatively:** If you prefer, you could grant me a one-time exception to edit lines 549-558 of the test file (just the wrapper function).",
+    "summary": "GREEN blocked — test wrapper needs edit by Merian",
+    "timestamp": "2026-04-11T14:08:05.997Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"linnaeus\",\"timestamp\":\"2026-04-11T14:08:10.503Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T14:08:10.503Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "[2026-04-11 17:14] Wrapper and old tests updated — all `checkDeath` calls now go through `checkDeathV2(entity, rng, ledger, dm, cfg)`. Removed stale `@ts-expect-error` on `ageDeathVariability` (Linnaeus already added it to `SpeciesStats`).\n\n**Blocker:** Can't commit — `tsc --noEmit` fails on `src/core/genome.ts:235`. Linnaeus added `ageDeathVariability` to `SpeciesStats` interface but `mutateStats()` return object doesn't include it. Pre-commit hook rejects.\n\nNeed Linnaeus to add `ageDeathVariability: parent.ageDeathVariability * driftFactor()` to `genome.ts:235` return block. Then I can commit and hand off.",
+    "summary": "Blocker: genome.ts tsc error blocks commit",
+    "timestamp": "2026-04-11T14:14:47.105Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"merian\",\"timestamp\":\"2026-04-11T14:14:49.671Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T14:14:49.671Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"cuvier\",\"timestamp\":\"2026-04-11T14:15:17.330Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T14:15:17.330Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "[2026-04-11 17:15] Sub-agent test complete. Results:\n\n- **Model:** haiku, **run_in_background:** true, **no team_name**\n- **Ran successfully** — no new tmux pane created, executed in-process\n- **Output:** `date` returned `11 apr 2026 17:15:16 EEST`\n- **Stats:** 27,284 tokens, 1 tool use, 2.8s duration\n\nConfirmed: Agent tool without team_name spawns an in-process sub-agent, not a new tmux pane.",
+    "summary": "Haiku sub-agent test results",
+    "timestamp": "2026-04-11T14:15:26.429Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"cuvier\",\"timestamp\":\"2026-04-11T14:15:28.375Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T14:15:28.375Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "[2026-04-11 17:16] Confirming — my detailed report should already be in your inbox (sent at 17:15). Short version: yes, it worked. Haiku sub-agent ran fully in-process, no new tmux pane, returned the date in 2.8s. Good mechanism for lightweight delegated work.",
+    "summary": "Confirming sub-agent test succeeded",
+    "timestamp": "2026-04-11T14:15:37.799Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"cuvier\",\"timestamp\":\"2026-04-11T14:15:44.192Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T14:15:44.192Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "[2026-04-11 17:15] Fixed `genome.ts:252` — added `ageDeathVariability` to `mutateStats` return. Committed as `d3216f0`, all pre-commit gates pass. Merian notified.\n\nStill blocked on the main Issue #10 implementation — awaiting test wrapper update from Merian or your decision on the scope exception. Standing by.",
+    "summary": "genome.ts fixed, committed d3216f0, Merian notified",
+    "timestamp": "2026-04-11T14:15:46.578Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"linnaeus\",\"timestamp\":\"2026-04-11T14:15:50.290Z\",\"idleReason\":\"available\",\"summary\":\"[to merian] tsc fixed — ageDeathVariability in config + genome\"}",
+    "timestamp": "2026-04-11T14:15:50.290Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "[2026-04-11 17:16] Committed `ab57b64` — wrapper passes rng through, all old tests routed through wrapper. Notified Linnaeus, he's unblocked. Standing by.",
+    "summary": "Committed and notified Linnaeus, standing by",
+    "timestamp": "2026-04-11T14:16:25.206Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"merian\",\"timestamp\":\"2026-04-11T14:16:27.884Z\",\"idleReason\":\"available\",\"summary\":\"[to linnaeus] Tests committed, Linnaeus unblocked\"}",
+    "timestamp": "2026-04-11T14:16:27.884Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "[2026-04-11 17:16] Already done — our messages crossed. Commit `ab57b64` landed and Linnaeus has been notified with full handoff details. Standing by.",
+    "summary": "Already committed and handed off",
+    "timestamp": "2026-04-11T14:16:36.371Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"merian\",\"timestamp\":\"2026-04-11T14:16:38.861Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T14:16:38.861Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "[2026-04-11 17:19] **ESCALATION — Issue #10 GREEN blocked on two test file issues**\n\nI've implemented the probabilistic ramp in `lifecycle.ts` and wired `sim.ts`. `tsc` finds two test-file problems I cannot fix:\n\n**1. `tests/lifecycle.test.ts` wrapper types shifted**\nThe `checkDeathV2` wrapper (line 548-557) uses `Parameters<typeof checkDeathBase>[N]` to derive its types. Since I added `rng` as param[1], the indices shifted:\n- `Parameters<...>[1]` is now `Rng`, not `Ledger`\n- `Parameters<...>[2]` is now `Ledger`, not `DeadMatterRegistry`\n- `Parameters<...>[3]` is now `DeadMatterRegistry`, not `Config`\n\n**Fix for Merian:** Replace `Parameters<typeof checkDeathBase>[N]` with direct types, or shift indices to `[2]`, `[3]`, `[4]`.\n\n**2. `tests/conservation.test.ts` — 4-param calls**\nLines 131 and 220 call `checkDeath(entity, ledger, deadMatter, cfg)` with old 4-param signature. Need `rng` as 2nd arg.\n\n**Fix for Merian:** Add `makeRng(seed)` as 2nd argument at both call sites. Import `makeRng` if not already imported.\n\n**Also: I changed `ageDeathVariability` defaults from 0.2 to 0** because old Story 4.3 tests at age=900/lifespan=900 are in the ramp zone with 0.2, and `makeRng(1).float()` = 0.627 (>0.5) so they wouldn't die. With default 0, old tests get backward-compatible hard cutoff. New Issue #10 tests explicitly set their own variability. You may want different defaults later — that's a design call.",
+    "summary": "GREEN blocked again — 2 more test files need updates",
+    "timestamp": "2026-04-11T14:19:34.138Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"linnaeus\",\"timestamp\":\"2026-04-11T14:19:39.177Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T14:19:39.177Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "[2026-04-11 17:20] Committed `d19d575` — fixed checkDeathV2 wrapper indices and conservation.test.ts call sites. Linnaeus notified. Standing by.",
+    "summary": "Test fixes committed, Linnaeus notified",
+    "timestamp": "2026-04-11T14:21:04.055Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"merian\",\"timestamp\":\"2026-04-11T14:21:06.197Z\",\"idleReason\":\"available\",\"summary\":\"[to linnaeus] Test call sites fixed, Linnaeus unblocked\"}",
+    "timestamp": "2026-04-11T14:21:06.197Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "[2026-04-11 17:22] Acknowledged — sub-agent delegation policy noted. No team_name, haiku/sonnet only, own domain files only, review before commit, no SendMessage, no pipeline work. Will read the full section in common-prompt.md. Standing by.",
+    "summary": "Sub-agent policy acknowledged",
+    "timestamp": "2026-04-11T14:21:33.341Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "[2026-04-11 17:22] Acknowledged — new sub-agent delegation policy received. Confirming understanding of all 6 rules:\n\n1. No `team_name` — in-process only\n2. Haiku for simple, sonnet for judgment, never opus\n3. File ownership inherited from me (src/ only, no tests/stories/docs)\n4. Review all sub-agent output before committing\n5. No SendMessage from sub-agents\n6. No pipeline work — RED/GREEN/PURPLE stays with me\n\nWill re-read the full section in common-prompt.md. Standing by.",
+    "summary": "ACK sub-agent delegation policy",
+    "timestamp": "2026-04-11T14:21:33.561Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"cuvier\",\"timestamp\":\"2026-04-11T14:21:35.066Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T14:21:35.066Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"merian\",\"timestamp\":\"2026-04-11T14:21:35.584Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T14:21:35.584Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "[2026-04-11 17:22] GREEN phase complete for Issue #10. All 676 tests pass. Commit `51cd33c`. GREEN_HANDOFF sent to Cuvier. Standing by.",
+    "summary": "GREEN complete — Issue #10 handed to Cuvier",
+    "timestamp": "2026-04-11T14:22:44.238Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"linnaeus\",\"timestamp\":\"2026-04-11T14:22:49.080Z\",\"idleReason\":\"available\",\"summary\":\"[to cuvier] GREEN_HANDOFF Issue #10 probabilistic age-death\"}",
+    "timestamp": "2026-04-11T14:22:49.080Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"linnaeus\",\"timestamp\":\"2026-04-11T14:22:52.823Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T14:22:52.823Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "[2026-04-11 17:25]\n\n## Cycle Complete\n- Story: Issue #10\n- Test case: AC1-AC7 (14 tests) — DONE\n- Total cycles: 1 (single GREEN→PURPLE pass)\n- Final commit: `51cd33c`\n- Quality notes:\n  - Implementation is clean and minimal. No refactoring needed.\n  - Age-death ramp logic is correct, readable, handles edge cases properly.\n  - `ageDeathVariability` defaults to 0 across all species — backward compatible with Story 4.3 tests. Production defaults (0.2?) are a design decision for you.\n  - No clamping on `ageDeathVariability` in ramp or mutation drift — Linnaeus deferred this to you. If variability > 1, `lower` goes negative. If this matters, it needs a design decision.\n  - With default 0, mutation drift is inert (`0 * driftFactor() = 0`). Drift only activates if you set a non-zero production default.\n  - `checkDeathV2` wrapper in tests is now dead scaffolding (just forwards to `checkDeathBase`). Merian should clean this up.\n\n### Ready for next test case: YES\n\n(*BF:Cuvier*)",
+    "summary": "CYCLE_COMPLETE Issue #10 — ACCEPT",
+    "timestamp": "2026-04-11T14:25:24.054Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "[2026-04-11 17:25] Cuvier ACCEPTED Issue #10 with no refactoring needed. Final commit: `51cd33c`. Cycle complete (0 rejections). Standing by for next assignment.",
+    "summary": "Issue #10 ACCEPTED by Cuvier — cycle complete",
+    "timestamp": "2026-04-11T14:25:25.934Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"cuvier\",\"timestamp\":\"2026-04-11T14:25:26.456Z\",\"idleReason\":\"available\",\"summary\":\"[to linnaeus] PURPLE_VERDICT: ACCEPT Issue #10\"}",
+    "timestamp": "2026-04-11T14:25:26.456Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"linnaeus\",\"timestamp\":\"2026-04-11T14:25:29.696Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T14:25:29.696Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"cuvier\",\"timestamp\":\"2026-04-11T14:25:30.507Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T14:25:30.507Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "[2026-04-11 17:26] Acknowledged. All future handoff messages (PURPLE_VERDICT and CYCLE_COMPLETE) will include:\n\n- **Sub-agent uses:** count (or 0)\n- **Assessment:** what worked, what didn't, worth the tokens?\n\nNote: for the Issue #10 cycle just completed, sub-agent uses were 0. Standing by.",
+    "summary": "ACK sub-agent reporting requirement",
+    "timestamp": "2026-04-11T14:26:25.681Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "[2026-04-11 17:26] Acknowledged — will include sub-agent usage count and assessment in all handoff messages going forward. Standing by.",
+    "summary": "Sub-agent reporting requirement acknowledged",
+    "timestamp": "2026-04-11T14:26:26.554Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "[2026-04-11 17:26] Acknowledged. Will include sub-agent usage (count + assessment) in all future GREEN_HANDOFF messages. Standing by.",
+    "summary": "Acknowledged sub-agent reporting requirement",
+    "timestamp": "2026-04-11T14:26:27.315Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"cuvier\",\"timestamp\":\"2026-04-11T14:26:27.722Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T14:26:27.722Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"merian\",\"timestamp\":\"2026-04-11T14:26:29.018Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T14:26:29.018Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"linnaeus\",\"timestamp\":\"2026-04-11T14:26:31.232Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T14:26:31.232Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "[2026-04-11 17:33] Both tasks done:\n\n**Task 1:** Wrapper cleanup committed as `5ba4988` — removed checkDeathV2, all 21 calls now direct checkDeathBase.\n\n**Task 2:** RED tests committed as `38086de` — 4 failing tests for ageDeathVariability defaults (0.2) and clamping ([0.05, 0.7]) across config.test.ts, genome.test.ts, configLoader.test.ts. 676 pre-existing pass. Handed off to Linnaeus.\n\n**Sub-agent uses:** 0\n**Assessment:** N/A — tasks were small enough to handle directly.\n\nStanding by.",
+    "summary": "Both tasks done, handed off to Linnaeus",
+    "timestamp": "2026-04-11T14:33:25.792Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"merian\",\"timestamp\":\"2026-04-11T14:33:28.108Z\",\"idleReason\":\"available\",\"summary\":\"[to linnaeus] RED handoff — defaults + clamping tests\"}",
+    "timestamp": "2026-04-11T14:33:28.108Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "[2026-04-11 17:37] **ESCALATION — 5 old tests fail after changing defaults to 0.2**\n\nThe 4 new Merian tests pass (config defaults, genome clamp, configLoader clamp). But 5 old tests break because `defaultConfig()` now has `ageDeathVariability: 0.2`:\n\n**Root cause:** With variability=0.2, lifespan=900: lower=720, upper=1080. Old tests at age=900/lifespan=900 are in the ramp zone (p=0.5). `makeRng(1).float()` = 0.627 ≥ 0.5, so entity survives instead of dying.\n\n**Failing tests:**\n1. `lifecycle.test.ts:56` — \"returns died=true when age >= lifespan\"\n2. `lifecycle.test.ts:95` — \"creates a corpse with entity energy\"\n3. `lifecycle.test.ts:106` — \"registers corpse in dead matter registry\"\n4. `lifecycle.test.ts:115` — \"unregisters entity pool from ledger\"\n5. `conservation.test.ts:132` — multi-operation conservation sequence\n\n**Fix options for Merian:**\n- Change age from 900 to 1080+ (above upper bound) in these tests\n- Or use `makeConfig({ species: { herbivore: { ...defaultConfig().species.herbivore, ageDeathVariability: 0 } } })` for old tests\n- Conservation test line 131 needs the same treatment\n\n**What's done and working:**\n- config.ts: defaults at 0.2 ✓\n- genome.ts: mutateStats clamp [0.05, 0.7] ✓\n- configLoader.ts: loadConfigFile clamps [0.05, 0.7] ✓\n- makeConfig does NOT clamp (preserves AC4 variability=0 path) ✓",
+    "summary": "GREEN blocked — 5 old tests need updates for 0.2 default",
+    "timestamp": "2026-04-11T14:37:57.130Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"linnaeus\",\"timestamp\":\"2026-04-11T14:38:02.045Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T14:38:02.045Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "[2026-04-11 17:40] Old test fixes committed as `6e80c8c`. 5 tests updated (age 900→1080 for guaranteed death above upper bound). Linnaeus notified + warned about 4 ESLint errors in configLoader.ts.\n\n**Sub-agent uses:** 1 (haiku — 5 mechanical edits in 2 files, ~20s)\n**Assessment:** Good fit for sub-agent. Simple find-replace across files, correct on first try, saved ~5 manual Edit calls.\n\nStanding by.",
+    "summary": "Old tests fixed, sub-agent used for bulk edits",
+    "timestamp": "2026-04-11T14:41:16.296Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"merian\",\"timestamp\":\"2026-04-11T14:41:18.632Z\",\"idleReason\":\"available\",\"summary\":\"[to linnaeus] 5 old tests fixed, Linnaeus unblocked\"}",
+    "timestamp": "2026-04-11T14:41:18.632Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "[2026-04-11 17:44] GREEN phase complete for Issue #10 follow-up (defaults + clamping). All 680 tests pass. Commit `d1aaf49`. GREEN_HANDOFF sent to Cuvier. Standing by.",
+    "summary": "GREEN complete — defaults + clamping handed to Cuvier",
+    "timestamp": "2026-04-11T14:44:58.979Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"linnaeus\",\"timestamp\":\"2026-04-11T14:45:02.369Z\",\"idleReason\":\"available\",\"summary\":\"[to cuvier] GREEN_HANDOFF defaults + clamping follow-up\"}",
+    "timestamp": "2026-04-11T14:45:02.369Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "[2026-04-11 17:46]\n\n## Cycle Complete\n- Story: Issue #10 (follow-up — defaults + clamping)\n- Test case: 4 new tests — DONE\n- Total cycles: 1 (single GREEN→PURPLE pass)\n- Final commit: `d1aaf49`\n- Quality notes:\n  - Implementation follows existing patterns precisely. genome.ts clamp mirrors efficiency clamp. configLoader.ts uses type-honest `unknown` parsing.\n  - Design split is deliberate: `makeConfig` trusts code-level callers (needed by AC4 backward-compat tests), while `loadConfigFile` and `mutateStats` apply clamping. This is sound.\n  - Magic numbers 0.05/0.7 appear in genome.ts and configLoader.ts. Extracting a shared constant would cross module boundaries (escalation territory). Both uses are self-documenting in context. Flagging for your awareness — if you want them centralized, that's a design decision.\n  - Total test count now 680 (up from 676). All 5000-tick fuzz tests still pass.\n\n### Sub-agent uses: 0\n### Assessment: N/A — straightforward review, no mechanical work to delegate.\n\n### Ready for next test case: YES\n\n(*BF:Cuvier*)",
+    "summary": "CYCLE_COMPLETE Issue #10 follow-up — ACCEPT",
+    "timestamp": "2026-04-11T14:46:33.921Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "[2026-04-11 17:46] Cuvier ACCEPTED Issue #10 follow-up (defaults + clamping) with no refactoring needed. Final commit: `d1aaf49`. Cycle complete (0 rejections). Standing by.",
+    "summary": "Defaults+clamping ACCEPTED by Cuvier — cycle complete",
+    "timestamp": "2026-04-11T14:46:36.287Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"cuvier\",\"timestamp\":\"2026-04-11T14:46:37.537Z\",\"idleReason\":\"available\",\"summary\":\"[to linnaeus] PURPLE_VERDICT: ACCEPT defaults+clamping\"}",
+    "timestamp": "2026-04-11T14:46:37.537Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "{\"type\":\"idle_notification\",\"from\":\"linnaeus\",\"timestamp\":\"2026-04-11T14:46:39.941Z\",\"idleReason\":\"available\"}",
+    "timestamp": "2026-04-11T14:46:39.941Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "{\"type\":\"permission_request\",\"request_id\":\"perm-1775919374544-x5n11ra\",\"agent_id\":\"cuvier\",\"tool_name\":\"Write\",\"tool_use_id\":\"toolu_01RfBBFTLAEPctY7U6imyboG\",\"description\":\"Write a file to the local filesystem.\",\"input\":{\"file_path\":\"/home/michelek/Documents/github/mitselek/projects/bioforge/.claude/teams/bioforge-dev/memory/cuvier.md\",\"content\":\"# Cuvier — PURPLE Scratchpad\\n\\n## [CHECKPOINT] 2026-04-11 17:55 — Session End (Issue #10 Probabilistic Age-Death)\\n\\n### Project State\\n- **Tests:** 680 across 23 test files\\n- **Fuzz:** 10 seeds x 5000 ticks = 50,000 tick-assertions passing\\n- **Core simulation:** Energy conservation proven under fuzz with probabilistic age-death active (defaults 0.2).\\n\\n### Session Summary (Issue #10 — Probabilistic Age-Death)\\n- **2 cycles reviewed**, both ACCEPTED on first pass (0 rejections)\\n- **0 refactor commits** — both implementations were clean\\n- Cycle 1: Age-death ramp logic (commit `51cd33c`, 14 new tests, 676 total)\\n- Cycle 2: Defaults changed to 0.2 + clamping in genome.ts + configLoader.ts (commit `d1aaf49`, 4 new tests, 680 total)\\n\\n### [LEARNED] Sub-Agent Delegation Policy (2026-04-11)\\nEstablished this session. Agent tool without `team_name` runs in-process (no tmux pane). Haiku for simple tasks, sonnet for judgment, never opus. Must report sub-agent usage in handoff messages. Tested successfully with a haiku sub-agent running `date` (2.8s, 27k tokens).\\n\\n### [LEARNED] ageDeathVariability Design Split (2026-04-11)\\n`makeConfig` trusts code-level callers (tests need variability=0). `loadConfigFile` and `mutateStats` apply clamping [0.05, 0.7]. Magic numbers 0.05/0.7 in genome.ts and configLoader.ts — not centralized (cross-module = escalation territory).\\n\\n### [PATTERN] Linnaeus Code Quality\\nLinnaeus's code has been consistently clean across both Issue #10 handoffs. Both cycles were single-pass ACCEPTs. The `checkDeath` ramp logic, config additions, and genome mutation all followed existing patterns precisely.\\n\\n### Open Issues for Next Session\\n- **#6** — Map rescaling to fill panel\\n- **#7** — Sparklines into HUD + Controls panel\\n\\n### [DEFERRED] pop/chartBox Naming Mismatch\\n`LayoutConfig` (layouts.ts) uses panel key `pop`. `Layout` (layout.ts) uses field `chartBox`. Bridged via `pop: chartBox` in the boxes mapping. Humboldt deferred this — not blocking but inconsistent.\\n\\n### [DEFERRED] Lifespan/MaturityAge Clamp — 3 Instances (Escalation Pending)\\nEscalated to humboldt, no decision yet. Locations:\\n1. `processReproduction` (lifecycle.ts:93-97)\\n2. `tryCompostSpawn` (plants.ts:74-78)\\n3. `seedState` in `makeSim` (sim.ts:66-69)\\nRecommended: extract to entity.ts as `randomLifecycleParams(...)`.\\n\\n### [DEFERRED] SimState Dead Matter Gap\\nSimState does not expose dead matter (corpses, compost, poop). Spec §13.2 priority layers 3-5 cannot render. Needs SimState extension.\\n\\n### [GOTCHA] Blessed CJS/ESM Import Bug\\n`blessed` is CJS-only. In the ESM project, `import * as blessed from 'blessed'` works in `src/ui/layout.ts`, but `src/main.ts` uses `require('blessed')` behind a TTY guard. Intentional — blessed crashes without TTY.\\n\\n### [PATTERN] Review Workflow (Refined)\\n1. Verify HEAD matches handoff SHA\\n2. Run ALL gates independently (vitest, tsc, eslint, prettier, coverage)\\n3. Read implementation + tests + verify against spec/config values\\n4. Walk bounded-scope checklist: names, extract/inline, duplication, internal types, logic simplification\\n5. Commit if refactor needed, or report \\\"nothing to refactor\\\"\\n6. Send PURPLE_VERDICT to linnaeus, CYCLE_COMPLETE to humboldt\\n7. Include sub-agent usage report in all handoffs\\n\\n### [LEARNED] Key Patterns (Accumulated)\\n\\n**Dual-Write Sub-Accounting:** wasteBuffer is an accounting label within the entity pool, not a separate ledger pool. Sub-accounting fields must always check the authoritative ledger balance before transferring.\\n\\n**Epsilon Alignment:** Ledger epsilon and config energyEpsilon must match. Fixed by passing cfg.energyEpsilon to makeLedger.\\n\\n**JSDoc Misplacement:** GREEN tends to insert new functions between an existing JSDoc and its function. Watch for in every review.\\n\\n**Coverage Gap Categories:** Category 2 (defense-in-depth guards) is dominant — zero-amount guards, probability-dependent branches.\\n\\n(*BF:Cuvier*)\\n\"},\"permission_suggestions\":[]}",
+    "timestamp": "2026-04-11T14:56:14.545Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "{\"type\":\"permission_request\",\"request_id\":\"perm-1775919378938-gy9u2p8\",\"agent_id\":\"linnaeus\",\"tool_name\":\"Write\",\"tool_use_id\":\"toolu_01S3J6rzLjfa59amzp1f3zQb\",\"description\":\"Write a file to the local filesystem.\",\"input\":{\"file_path\":\"/home/michelek/Documents/github/mitselek/projects/bioforge/.claude/teams/bioforge-dev/memory/linnaeus.md\",\"content\":\"# Linnaeus — GREEN scratchpad\\n\\n## [CHECKPOINT] 2026-04-11 — Issue #10 probabilistic age-death COMPLETE\\n\\n**State**: 680 tests, 23 test files. Issue #10 done — probabilistic age-death ramp + defaults + clamping.\\n**HEAD**: d1aaf49 (defaults 0.2 + clamping follow-up)\\n\\n| AC | Files | Commit | Result |\\n|----|-------|--------|--------|\\n| AC1-AC7 (ramp) | `src/core/lifecycle.ts`, `src/core/sim.ts` | 51cd33c | checkDeath probabilistic ramp |\\n| config prep | `src/core/config.ts`, `src/core/genome.ts` | d3216f0 | ageDeathVariability field + mutateStats |\\n| defaults+clamp | `src/core/config.ts`, `src/core/genome.ts`, `src/configLoader.ts` | d1aaf49 | defaults 0.2, clamp [0.05, 0.7] |\\n\\n### [GOTCHA] ageDeathVariability defaults break old tests\\nChanging defaults from 0 to 0.2 makes old Story 4.3 tests probabilistic at age=lifespan boundary. `makeRng(1).float()` = 0.627, which fails `< 0.5` check in ramp zone. Merian had to update old tests to use age >= upper bound (1080). Always check ripple effects when changing defaults that affect probabilistic behavior.\\n\\n### [GOTCHA] configLoader.ts must use `unknown`-first parsing\\nESLint `@typescript-eslint/no-unnecessary-condition` fires when you guard `sp.plant !== undefined` because `Record<Species, SpeciesStats>` types all keys as present. But JSON.parse returns untyped data — runtime species may be partial. Solution: parse as `Record<string, unknown>`, process, then cast to `Partial<Config>` at the end.\\n\\n### [GOTCHA] makeConfig vs loadConfigFile clamping split\\nClamping ageDeathVariability in `makeConfig` breaks AC4 (variability=0 backward compat). Clamping only in `loadConfigFile` + `mutateStats` preserves programmatic callers while sanitizing user-file input. This is a deliberate design split.\\n\\n### [PATTERN] checkDeath now takes 5 params\\n`checkDeath(entity, rng, ledger, deadMatter, cfg)` — rng is required (non-optional). All call sites (tests + sim.ts) pass rng explicitly.\\n\\n### [DEFERRED] Magic numbers 0.05 and 0.7\\nageDeathVariability clamp bounds appear in genome.ts, configLoader.ts, and tests. Could be named constants. Cuvier noted as acceptable for now.\\n\\n---\\n\\n## [CHECKPOINT] 2026-04-11 — Issue #9 config file loader COMPLETE\\n\\n**State**: 663 tests, 23 test files. Issue #9 done — loadConfigFile + run.ts wired.\\n**HEAD**: 11f4962 (Cuvier JSDoc cleanup after 3021458)\\n\\n| AC | Files | Commit | Result |\\n|----|-------|--------|--------|\\n| AC1–AC4 | `src/configLoader.ts`, `src/run.ts` | 3021458 | loadConfigFile impl + run.ts wiring |\\n| PURPLE | `src/configLoader.ts` | 11f4962 | JSDoc stub text removed |\\n\\n### [GOTCHA] Flaky perf test in physics.test.ts\\n`physics.test.ts:117` — \\\"handles 1000 entities and 1000 queries in under 100ms\\\" — consistently timing out at ~363ms on this machine. Pre-existing, not caused by any Issue #6–9 work. Confirmed by Cuvier. Humboldt to decide whether to raise the threshold or skip.\\n\\n---\\n\\n## [CHECKPOINT] 2026-04-11 — Issue #7 sparklines + controls COMPLETE\\n\\n**State**: 650 tests, 22 test files. Issue #7 done — sparklines in HUD, renderControls exported.\\n**HEAD**: 2a76205 (Cuvier accepted, no refactor needed)\\n\\n| AC | Files | Commit | Result |\\n|----|-------|--------|--------|\\n| AC1.2 + AC2.1-3 | `src/ui/hud.ts`, `src/ui/layout.ts`, `src/run.ts` | 2a76205 | sparklines + controls |\\n\\n### [GOTCHA] Private function duplication when can't export\\n`chart.ts`'s `sparkline()` is private. Duplicated as `miniSparkline()` in hud.ts — intentional GREEN minimum. Cuvier escalated to Humboldt: if `sparkline` is exported from chart.ts, hud.ts can import it instead.\\n\\n### [DEFERRED] `renderChart` is dead code\\nNo callers in `src/` after run.ts switched to `renderControls`. Exported but unused. Cuvier noted — Humboldt to decide whether to remove.\\n\\n---\\n\\n## [CHECKPOINT] 2026-04-11 — Issue #6 viewport scaling COMPLETE\\n\\n**State**: 630 tests, 22 test files. Issue #6 done — viewport scaling in rasterize.\\n**HEAD**: 9321548 (Cuvier's align commit after d091e76)\\n\\n| AC | Files | Commit | Result |\\n|----|-------|--------|--------|\\n| AC1–AC4 | `src/ui/worldView.ts`, `src/run.ts` | d091e76 | viewport params + scaling formula |\\n| PURPLE | `src/ui/worldView.ts` | 9321548 | selected entity highlight formula aligned |\\n\\n### [GOTCHA] Two entity-to-cell mapping paths in worldView.ts\\nMain paint loop and selected-entity highlight must use the SAME formula. Always check ALL entity→cell conversions in a file when changing the mapping formula.\\n\\n### [DEFERRED] Cone/sightline at non-1:1 viewport scale\\n`applyConeOverlay` and `applySightLine` still use `worldToCell` wrap-based math. At viewport != world size they map incorrectly. No test covers this.\\n\\n---\\n\\n## [CHECKPOINT] 2026-04-11 — Layout System Rework COMPLETE\\n\\n**State**: 615 tests, 22 test files. Layout System Rework story fully done (AC1–AC6).\\n**HEAD**: 67416d1 (feat(run): wire genome panel + mini HUD + layout apply per frame)\\n\\n| AC | Files | Commit | Result |\\n|----|-------|--------|--------|\\n| AC1 | `src/ui/layouts.ts` | d17524f | LAYOUTS registry + applyLayout |\\n| AC2 | `src/ui/inspector.ts` | 3fc251d | renderGenome extracted |\\n| AC3 | `src/ui/layout.ts` | eba5200 | 6 boxes, LAYOUT_1 default |\\n| AC4 | `src/ui/input.ts`, `src/run.ts` | ae0e5a3 | cycleLayout, l key |\\n| AC5 | `src/ui/hud.ts` | 3bf8f37 | renderMiniHud |\\n| AC6 | `src/run.ts` | 67416d1 | full wiring |\\n\\n### [GOTCHA] JSDoc detachment on insertion\\nWhen inserting a new function before an existing one, the existing JSDoc block stays above the new function and detaches from its intended target. Always insert NEW functions AFTER the complete JSDoc+function block of the one above.\\n\\n---\\n\\n## [PATTERN] Established GREEN patterns\\n\\n### Dual-write invariant\\nEvery energy transfer requires both:\\n1. `ledger.transfer(from, to, amount)` — keeps ledger balanced\\n2. `entity.field += amount` / `entity.field -= amount` — keeps struct in sync\\n\\n### Zero-guard early return\\n`if (eaten === 0) return` / `if (actual === 0) return` — skip ledger call when nothing moves.\\n\\n### Gaussian lifespan clamp — 3 instances\\n`processReproduction` (lifecycle.ts), `tryCompostSpawn` (plants.ts), `seedState` (sim.ts). If a 4th appears, escalate to Humboldt for a shared helper.\\n\\n### Prettier always needs a pass after edits\\nLong lines require `npx prettier --write` before commit. Pre-commit hook catches it.\\n\"},\"permission_suggestions\":[]}",
+    "timestamp": "2026-04-11T14:56:18.939Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "{\"type\":\"permission_request\",\"request_id\":\"perm-1775919467201-boe6itt\",\"agent_id\":\"merian\",\"tool_name\":\"Write\",\"tool_use_id\":\"toolu_01PWyeRBih2mu5j3SFG3FYXF\",\"description\":\"Write a file to the local filesystem.\",\"input\":{\"file_path\":\"/home/michelek/Documents/github/mitselek/projects/bioforge/.claude/teams/bioforge-dev/memory/merian.md\",\"content\":\"# Merian Scratchpad (*BF:Merian*)\\n\\n## Session: 2026-04-10\\n\\n### [CHECKPOINT] 2026-04-10 20:40\\n\\nPhase 3 complete (220 tests, 11 modules). Phase 4 in progress.\\n\\nRED commits this session:\\n\\n- `b258fac` — 4.1 AC1: applyMovement (position integration, torus wrap, velocity reset)\\n- `62f51e6` — 4.1 AC2: applyMovementCost (drag model, ledger transfer to soil)\\n- `6af286a` — 4.2 AC1: applyMetabolism (base drain, age++, all species, energy floor)\\n- `225d7cc` — 4.3 AC1: checkDeath (old-age, starvation, corpse creation, elision)\\n- `7d50646` — 4.3 AC2: processReproduction (energy split, child entity, parent state reset)\\n\\nNew modules created this session: `src/core/metabolism.ts`, `src/core/lifecycle.ts`\\n\\n[DECISION] processReproduction signature includes `childId: EntityId` param — sim owns ID\\nallocation, keeps the function pure.\\n\\n---\\n\\n---\\n\\n### [CHECKPOINT] 2026-04-10 23:55\\n\\nPhase 4 complete (340 tests, 16 modules). 122/142 ACs done.\\n\\nRED commits this session:\\n\\n- `2a26773` — 4.1 AC4.1.2: lastMoveDistance (Entity field + physics pin test)\\n- `acff15b` — 4.2 AC4+AC5: checkWasteDrop (poop/compost dropping, species discrimination)\\n- `7a7fa7a` — 4.1 AC4.1.3-6: resolveCollisions (elastic collision stub + 6 RED tests)\\n- `4041f22` — 4.4 AC4.4.1-4: applyDecomposerEating + applyCorpseDecay (new decomposition.ts)\\n- `d88716a` — 4.4 AC4.4.1-4: escalation fix — targetPool: EnergyPool param added\\n- `68f0e04` — 4.4 AC4.4.5-9: applyPlantAbsorption + tryCompostSpawn (new plants.ts)\\n- `dddeef8` — 4.4 AC4.4.10+4.2.6+4.5.3-5: conservation integration tests (new conservation.test.ts)\\n- `53ff6f8` — checkpoint scratchpad save\\n\\nNew modules created this session: `src/core/decomposition.ts`, `src/core/plants.ts`\\n\\n[DECISION] `applyDecomposerEating` takes `targetPool: EnergyPool` as 3rd param — Humboldt-approved. Both `Corpse` and `Poop` branded IDs are compile-time only; no `kind` field exists at runtime. Caller (who iterates the registry) constructs the pool literal and passes it in.\\n\\n---\\n\\n### [LEARNED] 2026-04-10 23:55 — Integration test corpse/entity ledger sync\\n\\n**Never mutate `entity.energy` directly when testing through `checkDeath` / ledger.**\\n\\nIf you need a corpse to be created at energy=N, register a *new* entity at exactly N energy and trigger death via `entity.age = entity.lifespan`. Do not reuse an entity that was set up with a different registered energy and then try to set `entity.energy` by hand — the ledger will reject `unregister` with \\\"cannot unregister non-empty pool.\\\"\\n\\nPattern that works:\\n```\\nconst dyingHerb = makeHerbivore(...)\\ndyingHerb.age = dyingHerb.lifespan        // trigger old-age\\ndyingHerb.energy = corpseEnergy           // set BEFORE registering\\nledger.register({ kind: 'entity', id: dyingHerb.id }, corpseEnergy)\\ncheckDeath(dyingHerb, ledger, ...)         // creates corpse with correct energy\\n```\\n\\n---\\n\\n### [LEARNED] 2026-04-10 23:55 — Integration tests green-on-arrival are valid RED\\n\\nWhen Linnaeus had already implemented a function concurrently (e.g., `applyDecomposerEating`), a test written against its spec passed immediately. This is correct — the test still went through RED review and becomes a regression pin. Not every RED commit requires a failing test; what matters is that the test expresses the spec.\\n\\n---\\n\\n### [PATTERN] 2026-04-10 23:55 — Deterministic spawn tests with makeConfig overrides\\n\\n```typescript\\nconst cfgAlwaysSpawn = makeConfig({ plantSpawnBaseProb: 1.0 })   // guaranteed spawn\\nconst cfgNeverSpawn  = makeConfig({ plantSpawnBaseProb: 0 })      // guaranteed no spawn\\nconst cfgNoAuto      = makeConfig({ autoSpawnPlants: false })     // guard branch test\\n```\\n\\nUse this pattern whenever a probability gate needs deterministic test coverage without using `Math.random`.\\n\\n---\\n\\n### [GOTCHA] 2026-04-10 23:55 — Dead code: `ledger.register` after `checkDeath`\\n\\n`checkDeath` already calls `ledger.register` for the newly created corpse pool. Adding a second `ledger.register` call for the same corpse in a test helper causes a \\\"duplicate pool\\\" error. Symptom: error thrown inside `checkDeath`, looks like a logic bug, is actually double-registration.\\n\\n---\\n\\n### [GOTCHA] 2026-04-10 20:05 — Torus-wrap fixture arithmetic\\n\\n**Always verify `px + vx*dt > worldW` numerically before committing a wrap test.**\\n\\n`makeHerbivore(79.9, 15, 1.2, 0)` with `dt=1/30`:\\n\\n- raw = `79.9 + 1.2*(1/30)` = `79.94` — does NOT cross `worldW=80`\\n- no wrap occurs; `toBeLessThan(1)` assertion fails even with correct implementation\\n\\nFix: use `px=79.99` → raw `80.03` → wraps to `~0.03`. Intent (\\\"near the edge\\\") is not sufficient — compute the sum first.\\n\\n---\\n\\n---\\n\\n### [CHECKPOINT] 2026-04-11 00:01\\n\\nPhase 5 complete (385 tests + 50,000 fuzz tick-assertions, 17 modules). Core sim feature-complete.\\n\\nRED commits this session:\\n\\n- `768c4ec` — 5.1 AC1-3: makeSim constructor, initial state, determinism (new sim.ts + sim.test.ts)\\n- `ccb4546` — 5.1 AC4-7: tick loop, invariants, 1000-tick crash-free run (Sim interface + assertFinite)\\n- `f8979f4` — 5.1 AC8-9: state snapshot fields (countsBySpecies, totalEnergy) + sim.reset() stub\\n- `7cfde38` — 5.2 AC1-5: energy conservation fuzz test (new energyConservation.test.ts)\\n\\nNew modules: `src/core/sim.ts`\\n\\n[DECISION] `SimState` exposes `countsBySpecies: Readonly<Record<string,number>>` and `totalEnergy: number` computed fresh each call. Not a frozen snapshot — live getter. Intentional: UI layer needs current counts without deep-copying the entities map.\\n\\n[LEARNED] Fuzz found real drift bug: `tick()` violated conservation at ~1e-6 on some seeds. The ledger's own `assertEnergyConserved()` guard (called inside `tick()`) fires before test assertions run. Linnaeus to fix.\\n\\n---\\n\\n### [CHECKPOINT] 2026-04-11 00:33 — Session end\\n\\n406 tests, 142 ACs, energy conservation proven. All phases complete.\\n\\nRED commits (Phase 7):\\n- `3ef6bba` — 7.1 AC1-6: startApp wiring tests (new main.ts stub + main.test.ts, 21 RED)\\n\\nNew modules: `src/main.ts`\\n\\n[DEFERRED] AC7.1.1-6 awaiting PO visual verification. The 21 main.test.ts tests are RED — Linnaeus has not yet implemented startApp(). Next session: pick up GREEN for 7.1.\\n\\n[WARNING] blessed CJS/ESM import bug was hit this session (details not captured by Merian — Humboldt/Linnaeus resolved it). If `import * as blessed from 'blessed'` causes issues, check package.json `\\\"type\\\": \\\"module\\\"` and use `import blessed from 'blessed'` or a dynamic import wrapper.\\n\\n[DEFERRED] UI smoke tests still missing: renderHud, renderInspector, chart sparkline output shape tests. These modules (src/ui/*.ts) have no vitest coverage. A future story should add pure-function tests for the string-output functions (no terminal required — they return string[]).\\n\\n---\\n\\n### [LEARNED] 2026-04-10 20:05 — Verify test fixture math before commit\\n\\nWhen writing boundary-crossing tests (torus wrap, threshold triggers, etc.), compute the exact numeric outcome of the fixture values. Don't rely on intuition about \\\"close enough to the edge.\\\" A quick `node -e` sanity check takes 5 seconds and prevents blocking GREEN.\\n\\n---\\n\\n### [CHECKPOINT] 2026-04-11 10:20 — Layout System Rework, AC1 RED\\n\\nRED commit: `d9a0529` — AC1: LayoutConfig type + LAYOUTS registry + applyLayout\\n- New files: `tests/ui.test.ts` (149 tests, 146 RED) + `src/ui/layouts.ts` (type stub)\\n- 21 pre-existing test files still pass (409 tests)\\n\\n[PATTERN] 2026-04-11 — Stub file for new-module RED tests\\n\\nWhen writing RED tests for a module that doesn't exist yet, create a minimal\\n`src/ui/<module>.ts` stub that:\\n1. Exports the correct TypeScript types/interfaces (satisfies tsc)\\n2. Exports the expected symbols with empty/stub implementations (empty object,\\n   function that throws)\\n3. Uses `void param` for unused stub parameters (avoids no-unused-vars ESLint)\\n\\nThis keeps tsc and ESLint clean while all assertion-level tests fail RED.\\n\\n[GOTCHA] 2026-04-11 — `_param` prefix does NOT suppress no-unused-vars in this ESLint config\\n\\nDespite the convention, `_` prefix on unused params triggers ESLint errors here.\\nUse `void param` inside the function body instead:\\n```typescript\\nexport function stub(boxes: T, name: U): void {\\n  void boxes; void name\\n  throw new Error('not implemented')\\n}\\n```\\n\\n[GOTCHA] 2026-04-11 — Dynamic `import()` inside try/catch still fails tsc if the path doesn't resolve\\n\\nEven with a `try { await import('../src/ui/nonexistent.js') } catch {}` pattern,\\ntsc errors with TS2307 when the file doesn't exist. Solution: create the stub file\\nfirst, then write the test file. Order matters.\\n\\n[PATTERN] 2026-04-11 — Use vitest assert() for type-narrowing on speculative imports\\n\\nWhen a function may or may not exist (RED phase, not yet exported), use:\\n```typescript\\nimport { assert } from 'vitest'\\n// ...\\nassert(renderGenome !== undefined, 'renderGenome not yet exported')\\nconst lines = renderGenome(entity) // TypeScript narrowed: no longer undefined\\n```\\nThis avoids `!` non-null assertions (forbidden) and `as Type` casts (triggers\\nESLint non-nullable-type-assertion-style). `assert()` both fails the test with\\na clear message AND narrows the type for subsequent calls.\\n\\n[CHECKPOINT] 2026-04-11 10:30\\n\\nRED commit: `1fbb5fd` — AC2 genome panel breakout (15 new failing tests)\\n- 10 tests for renderGenome (not yet exported from inspector.ts)\\n- 5 tests for renderInspector cleanup (opcodes/IP marker/Genome header must go)\\n- 6 regression pins for renderInspector summary fields (already pass — correctly)\\n\\n[CHECKPOINT] 2026-04-11 11:15 — Layout System Rework, AC3–AC5 RED\\n\\nRED commits:\\n- `6a1d...` (AC3) — createLayout() returns 6 boxes (miniHudBox + genomeBox added)\\n- `...` (AC4) — KeyCallbacks.cycleLayout type-level RED + cycling index tests\\n- `7f2673c` (AC5) — renderMiniHud 14 failing tests\\n\\nAC5 contract (for Linnaeus):\\n- `renderMiniHud(simState: SimState): string[]` in `src/ui/hud.ts`\\n- 4 lines: `P:<n>`, `H:<n>`, `C:<n>`, `D:<n>` — regex `^[PHCD]:\\\\s*\\\\d+$`\\n\\nAC6 (run.ts wiring) not yet started — awaiting Humboldt TEST_SPEC next session.\\n\\nOpen stories for next session:\\n- #6 — Map rescaling to fill panel\\n- #7 — Sparklines into HUD + Controls panel\\n\\n[PATTERN] 2026-04-11 — vi.mock('blessed') for headless layout tests\\n\\n```typescript\\nvi.mock('blessed', () => {\\n  function makeBox(opts: Record<string, unknown>): Record<string, unknown> { return { ...opts, _type: 'box' } }\\n  function makeScreen(): Record<string, unknown> { return { _type: 'screen', on: vi.fn(), render: vi.fn() } }\\n  return { default: { screen: makeScreen, box: makeBox } }\\n})\\n// Then dynamic import AFTER mock registration:\\nconst { createLayout } = (await import('../src/ui/layout.js')) as { createLayout: () => Layout6 }\\n```\\nvi.mock is hoisted by Vitest transform — registered before any imports execute.\\n\\n[PATTERN] 2026-04-11 — Type-level RED for interface additions\\n\\nUse `@ts-expect-error` + a typed helper to force GREEN to add a new field to an interface:\\n```typescript\\nfunction _requireKeyCallbacks(_cb: KeyCallbacks): void { void _cb }\\n_requireKeyCallbacks({\\n  // ... all existing fields ...\\n  // @ts-expect-error — cycleLayout not yet in KeyCallbacks; remove when GREEN adds it\\n  cycleLayout: () => undefined,\\n})\\n```\\nWhen GREEN adds the field, tsc fires TS2578 \\\"unused @ts-expect-error directive\\\" — GREEN removes the comment.\\n\\n[GOTCHA] 2026-04-11 — AC4: `l` key already bound to `cursorRight` in input.ts\\nLinnaeus must rebind `l` to `cycleLayout` and decide how to handle the former binding.\\n\\n---\\n\\n### [CHECKPOINT] 2026-04-11 12:39 — Issue #6 RED complete\\n\\nRED commit: `bc6603d` — Issue #6: rasterize viewport scaling (8 RED tests)\\n- 5 tests for AC1 (grid dimensions), 2 for AC3 (2× mapping), 1 for AC4 (priority in shared cell)\\n- AC2 and AC5 tests pass immediately (backward compat + cell shape already satisfied)\\n- All 622 pre-existing tests still pass\\n\\n### [CHECKPOINT] 2026-04-11 12:51 — Issue #7 RED complete\\n\\nRED commit: `5c3f9c5` — Issue #7: sparklines in HUD + controls panel (13 RED tests)\\n- AC1.2: 3 RED — renderHud must emit sparkline chars after species count lines\\n- AC2.1: 3 RED — renderControls not yet exported from hud.ts\\n- AC2.2: 6 RED — [space]/[r]/[q]/[l] hints + speed display\\n- AC2.3: 1 RED — chartBox label must be \\\"Controls\\\" not \\\"Population\\\" (layout.ts line 82)\\n- AC1.1 + AC1.3: 10 already pass (callable + stats fields present)\\n- All 637 pre-existing tests still pass\\n\\n[PATTERN] 2026-04-11 — `as unknown as T` cast for incompatible function types in RED\\n\\nWhen `as T` on a function triggers TS2352 (\\\"neither type sufficiently overlaps\\\"),\\nuse `as unknown as T` to force the cast. This bypasses the overlap check.\\nReserve for RED-phase type stubs only — never in production code.\\n\\n[GOTCHA] 2026-04-11 — Prettier pre-commit hook fires BEFORE vitest\\n\\nAlways run `npx prettier --write tests/ui.test.ts` before committing new test blocks.\\nThe hook runs format-check before typecheck; a format failure kills the commit even if\\ntsc and eslint pass. Also: `bioforge.config.json` (Humboldt's Issue #8 file) is covered\\nby the `*.json` glob — always include it in commits if it has unformatted changes.\\n\\n### [CHECKPOINT] 2026-04-11 15:14 — Issue #9 RED complete\\n\\nRED commit: `6c65152` — Issue #9: config file loader (11 RED tests)\\n- New files: `src/configLoader.ts` (stub), `tests/configLoader.test.ts`\\n- AC1: reads JSON → Partial<Config>; throws on bad JSON\\n- AC2: makeConfig(loadConfigFile()) produces valid Config\\n- AC3: missing file returns {} (no crash)\\n- AC4: JSON overrides propagate (seed:99999 test)\\n- All 652 pre-existing tests still pass\\n\\n---\\n\\n### [CHECKPOINT] 2026-04-11 17:55 — Issue #10 RED + follow-up complete\\n\\nRED commits this session:\\n- `6f50673` — Issue #10: probabilistic age-death (14 tests, AC1-AC7)\\n- `ab57b64` — Wire rng through checkDeathV2 wrapper + update old tests\\n- `d19d575` — Fix checkDeath call sites for 5-param signature (lifecycle + conservation)\\n- `5ba4988` — Remove dead checkDeathV2 wrapper, use direct checkDeathBase calls\\n- `38086de` — Issue #10 follow-up: ageDeathVariability defaults (0.2) + clamping ([0.05, 0.7])\\n- `6e80c8c` — Fix 5 old tests for ageDeathVariability=0.2 default (age 900→1080)\\n\\nTotal: 680 tests (676 pre-existing + 4 new RED for defaults/clamping, all passing after GREEN)\\n\\n[LEARNED] 2026-04-11 — Wrapper functions for future signatures cause more problems than they solve\\n\\nThe `checkDeathV2` wrapper approach (void rng, delegate to old 4-param) seemed clean but\\ncaused 3 rounds of coordination issues:\\n1. GREEN couldn't wire rng through the wrapper (voided)\\n2. Parameter indices shifted when GREEN changed the real signature\\n3. conservation.test.ts had separate calls not routed through wrapper\\n\\nBetter approach for future signature changes: use `@ts-expect-error` directly on the call\\nand accept the intermediate compile state, OR have GREEN add the param as optional at the\\nend so existing calls don't break. Don't build wrappers that shadow the real function.\\n\\n[LEARNED] 2026-04-11 — Changing defaults breaks old tests via probabilistic ramp zone\\n\\nWhen `ageDeathVariability` defaulted to 0.2, entities at age=lifespan fell into the ramp\\nzone (50% death) instead of guaranteed death. Old tests using `age=lifespan` for \\\"must die\\\"\\nassertions became flaky/failing. Fix: use `age >= ceil(lifespan * (1 + variability))` to\\nguarantee death in tests that need it.\\n\\n[GOTCHA] 2026-04-11 — Pre-commit hook checks ALL files, not just staged\\n\\nLinnaeus's uncommitted ESLint errors in `src/configLoader.ts` blocked my test-only commit.\\nWorkaround: `git stash push -m \\\"msg\\\" -- src/configLoader.ts`, commit tests, `git stash pop`.\\n\\n[PATTERN] 2026-04-11 — Sub-agent (haiku) for mechanical bulk edits\\n\\nDispatched haiku sub-agent for 5 targeted age-value edits across 2 test files. Completed\\ncorrectly in ~20s, saving 5 manual Edit tool calls. Good fit: simple, well-specified,\\nrepetitive, no judgment needed.\\n\\n(*BF:Merian*)\\n\"},\"permission_suggestions\":[]}",
+    "timestamp": "2026-04-11T14:57:47.202Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "[2026-04-11 17:55] Scratchpad written. Closing report:\n\n[LEARNED] configLoader.ts must parse JSON as `unknown`-first to avoid ESLint `no-unnecessary-condition` conflicts with `Record<Species, SpeciesStats>` typing — TypeScript says all keys exist, runtime disagrees.\n\n[DEFERRED] Magic numbers 0.05 and 0.7 (ageDeathVariability clamp bounds) duplicated across genome.ts, configLoader.ts, and tests. Could be named constants in a future cleanup.\n\n[WARNING] Changing `defaultConfig()` defaults for probabilistic fields has cascading test breakage — old tests at boundary values (age=lifespan) become probabilistic. Always check `makeRng(seed).float()` against ramp thresholds before committing default changes.\n\n[UNADDRESSED] Flaky physics.test.ts:117 perf test (~363ms vs 100ms threshold) — still pre-existing, still unresolved.",
+    "summary": "Linnaeus closing report + shutdown approved",
+    "timestamp": "2026-04-11T14:59:39.929Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "[2026-04-11 17:55] Scratchpad saved. Closing report:\n\n- [LEARNED] Wrapper functions for future function signatures cause cascading coordination issues. Better to use `@ts-expect-error` on direct calls or have GREEN add params as optional. Three rounds of fixes for checkDeathV2 was too much churn.\n- [DEFERRED] Issue #10 follow-up clamping tests (`38086de`) — 4 RED tests were written but Linnaeus may have already made them green. Cuvier still needs to review the full Issue #10 chain.\n- [WARNING] Linnaeus has 4 ESLint errors in uncommitted `src/configLoader.ts` (lines 28-35, `no-unnecessary-condition`). Will block any commit touching the worktree until fixed.\n- [UNADDRESSED] Energy conservation fuzz test (`energyConservation.test.ts`) has not been re-verified after the `ageDeathVariability` changes — probabilistic death may affect drift at high tick counts.",
+    "summary": "Closing report — shutdown approved",
+    "timestamp": "2026-04-11T14:59:42.379Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "linnaeus",
+    "text": "{\"type\":\"shutdown_approved\",\"requestId\":\"shutdown-1775919325764@linnaeus\",\"from\":\"linnaeus\",\"timestamp\":\"2026-04-11T14:59:43.336Z\",\"paneId\":\"%2\",\"backendType\":\"tmux\"}",
+    "timestamp": "2026-04-11T14:59:43.336Z",
+    "color": "green",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "[2026-04-11 17:55] Closing report from Cuvier (PURPLE).\n\n- [LEARNED] Sub-agent delegation works well in-process (no tmux pane). Tested with haiku — 2.8s, 27k tokens for a simple task. Did not need sub-agents for either PURPLE cycle this session (both were straightforward reviews).\n- [DEFERRED] Magic numbers 0.05/0.7 for ageDeathVariability clamp bounds appear in genome.ts and configLoader.ts. Centralizing requires cross-module work (escalation). Low priority — both uses are self-documenting in context.\n- [WARNING] The lifespan/maturityAge clamp duplication (3 instances across lifecycle.ts, plants.ts, sim.ts) from last session is still unresolved. Growing tech debt if more spawn paths are added.\n- [UNADDRESSED] `checkDeathV2` wrapper in lifecycle.test.ts was removed (commit `5ba4988` by Merian), so that's resolved.\n\nScratchpad written. Ready to shut down.",
+    "summary": "Cuvier closing report + shutdown approval",
+    "timestamp": "2026-04-11T14:59:46.566Z",
+    "color": "magenta",
+    "read": true
+  },
+  {
+    "from": "merian",
+    "text": "{\"type\":\"shutdown_approved\",\"requestId\":\"shutdown-1775919324841@merian\",\"from\":\"merian\",\"timestamp\":\"2026-04-11T14:59:47.282Z\",\"paneId\":\"%1\",\"backendType\":\"tmux\"}",
+    "timestamp": "2026-04-11T14:59:47.282Z",
+    "color": "red",
+    "read": true
+  },
+  {
+    "from": "cuvier",
+    "text": "{\"type\":\"shutdown_approved\",\"requestId\":\"shutdown-1775919326415@cuvier\",\"from\":\"cuvier\",\"timestamp\":\"2026-04-11T14:59:49.164Z\",\"paneId\":\"%3\",\"backendType\":\"tmux\"}",
+    "timestamp": "2026-04-11T14:59:49.164Z",
+    "color": "magenta",
+    "read": true
+  }
+]
