@@ -13,9 +13,9 @@ import { defaultConfig } from './core/config.js'
 import { createLayout } from './ui/layout.js'
 import { bindKeys } from './ui/input.js'
 import { rasterize } from './ui/worldView.js'
-import { renderHud } from './ui/hud.js'
+import { renderHud, renderMiniHud } from './ui/hud.js'
 import { makeChartHistory, updateChart, renderChart } from './ui/chart.js'
-import { renderInspector } from './ui/inspector.js'
+import { renderInspector, renderGenome } from './ui/inspector.js'
 import { ASCII_THEME } from './ui/theme.js'
 import { applyLayout } from './ui/layouts.js'
 import type { LayoutName } from './ui/layouts.js'
@@ -30,6 +30,16 @@ let chartHistory = makeChartHistory()
 // Layout cycling state
 const LAYOUT_ORDER: LayoutName[] = ['LAYOUT_1', 'LAYOUT_2', 'LAYOUT_ZEN', 'LAYOUT_FS']
 let layoutIndex = 0
+
+// Box mapping shared by createLayout default and cycleLayout callback
+const boxes = {
+  world: worldBox,
+  hud: hudBox,
+  miniHud: miniHudBox,
+  pop: chartBox,
+  inspector: inspectorBox,
+  genome: genomeBox,
+}
 
 // Selection cursor state: tracks which entity index is selected for cycling
 let selectedEntityIndex = 0
@@ -85,15 +95,7 @@ bindKeys(screen, {
     layoutIndex = (layoutIndex + 1) % LAYOUT_ORDER.length
     const name = LAYOUT_ORDER[layoutIndex]
     if (name !== undefined) {
-      const boxes = {
-        world: worldBox,
-        hud: hudBox,
-        miniHud: miniHudBox,
-        pop: chartBox,
-        inspector: inspectorBox,
-        genome: genomeBox,
-      }
-      applyLayout(boxes, name, 0, 0)
+      applyLayout(boxes, name, Number(screen.width), Number(screen.height))
     }
     screen.render()
   },
@@ -109,6 +111,12 @@ const loop = setInterval(() => {
 
   const state = sim.state
 
+  // Apply current layout each frame so panel visibility is always correct
+  const currentLayout = LAYOUT_ORDER[layoutIndex]
+  if (currentLayout !== undefined) {
+    applyLayout(boxes, currentLayout, Number(screen.width), Number(screen.height))
+  }
+
   // World panel: rasterize to ASCII grid
   const selectedId = app.selectedEntity?.id
   const grid = rasterize(state, cfg.worldW, cfg.worldH, ASCII_THEME, selectedId)
@@ -118,6 +126,9 @@ const loop = setInterval(() => {
   // HUD panel
   hudBox.setContent(renderHud(state, cfg).join('\n'))
 
+  // Mini HUD panel (visible in LAYOUT_FS only — layout controls visibility)
+  miniHudBox.setContent(renderMiniHud(state).join('\n'))
+
   // Chart panel
   chartHistory = updateChart(chartHistory, state)
   const chartWidth = Math.max(10, (chartBox.width as number) - 14)
@@ -125,6 +136,9 @@ const loop = setInterval(() => {
 
   // Inspector panel
   inspectorBox.setContent(renderInspector(app.selectedEntity, ASCII_THEME).join('\n'))
+
+  // Genome panel
+  genomeBox.setContent(renderGenome(app.selectedEntity).join('\n'))
 
   screen.render()
 }, frameMs)
