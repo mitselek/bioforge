@@ -49,7 +49,7 @@ describe('checkDeath', () => {
   describe('death conditions', () => {
     it('returns died=true when age >= lifespan (old age)', () => {
       // AC1: age equals lifespan — entity should die
-      const entity = makeHerbivore(50, 900, 900)
+      const entity = makeHerbivore(50, 1080, 900)
       const ledger = makeLedgerWith(50)
       const dm = makeDeadMatterRegistry()
       const result = checkDeathBase(entity, makeRng(1), ledger, dm, cfg)
@@ -88,7 +88,7 @@ describe('checkDeath', () => {
   describe('corpse creation on death', () => {
     it('creates a corpse with the entity energy at death position', () => {
       // AC4: corpse appears at entity position with entity's remaining energy
-      const entity = makeHerbivore(75, 900, 900)
+      const entity = makeHerbivore(75, 1080, 900)
       const ledger = makeLedgerWith(75)
       const dm = makeDeadMatterRegistry()
       const result = checkDeathBase(entity, makeRng(1), ledger, dm, cfg)
@@ -99,7 +99,7 @@ describe('checkDeath', () => {
 
     it('registers the corpse in the dead matter registry', () => {
       // AC5: corpse can be found by iterating the registry
-      const entity = makeHerbivore(75, 900, 900)
+      const entity = makeHerbivore(75, 1080, 900)
       const ledger = makeLedgerWith(75)
       const dm = makeDeadMatterRegistry()
       checkDeathBase(entity, makeRng(1), ledger, dm, cfg)
@@ -108,7 +108,7 @@ describe('checkDeath', () => {
 
     it('unregisters entity pool from ledger after death', () => {
       // AC6: entity pool no longer exists in ledger
-      const entity = makeHerbivore(75, 900, 900)
+      const entity = makeHerbivore(75, 1080, 900)
       const ledger = makeLedgerWith(75)
       const dm = makeDeadMatterRegistry()
       checkDeathBase(entity, makeRng(1), ledger, dm, cfg)

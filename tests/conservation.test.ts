@@ -97,7 +97,7 @@ describe('AC4.4.10 — multi-operation sequence energy conservation', () => {
     const dyingEnergy = cfg.energyEpsilon
     const dyingHerb = makeHerbivore(5, dyingEnergy)
     // Override age to trigger old-age death instead of starvation, ensuring energy > 0 for corpse
-    dyingHerb.age = dyingHerb.lifespan
+    dyingHerb.age = Math.ceil(dyingHerb.lifespan * 1.2)
 
     const soilEnergy = 500
     const corpseEnergy = 5 // use a separate entity with positive energy for corpse path
