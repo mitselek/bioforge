@@ -7,9 +7,15 @@
  * See docs/superpowers/specs/2026-04-10-bioforge-design.md §15.2.
  */
 
+import * as fs from 'node:fs'
 import type { Config } from './core/config.js'
 
-export function loadConfigFile(_path: string): Partial<Config> {
-  void _path
-  throw new Error('loadConfigFile not yet implemented')
+export function loadConfigFile(path: string): Partial<Config> {
+  try {
+    const raw = fs.readFileSync(path, 'utf8')
+    return JSON.parse(raw) as Partial<Config>
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return {}
+    throw err
+  }
 }

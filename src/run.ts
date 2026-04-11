@@ -9,7 +9,8 @@
  */
 
 import { startApp } from './main.js'
-import { defaultConfig } from './core/config.js'
+import { makeConfig } from './core/config.js'
+import { loadConfigFile } from './configLoader.js'
 import { createLayout } from './ui/layout.js'
 import { bindKeys } from './ui/input.js'
 import { rasterize } from './ui/worldView.js'
@@ -20,7 +21,7 @@ import { ASCII_THEME } from './ui/theme.js'
 import { applyLayout } from './ui/layouts.js'
 import type { LayoutName } from './ui/layouts.js'
 
-const cfg = defaultConfig()
+const cfg = makeConfig(loadConfigFile('bioforge.config.json'))
 const { screen, worldBox, hudBox, miniHudBox, chartBox, inspectorBox, genomeBox } = createLayout()
 const app = startApp(cfg)
 const { sim, clock } = app
