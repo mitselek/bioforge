@@ -245,7 +245,7 @@ export function makeSim(cfg: Config, rng: Rng): Sim {
       for (const id of sortedIds) {
         const entity = entities.get(id)
         if (entity === undefined) continue
-        const result = checkDeath(entity, ledger, deadMatter, cfg)
+        const result = checkDeath(entity, tickRng, ledger, deadMatter, cfg)
         if (result.died) {
           toRemove.push(id)
           if (result.corpse !== null) {

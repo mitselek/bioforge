@@ -23,8 +23,8 @@ export interface DeathResult {
 /**
  * Check whether an entity should die this tick and, if so, create a corpse.
  *
- * Death conditions (spec §5.3):
- * - `age >= lifespan` (old age)
+ * Death conditions (spec §5.3, Issue #10):
+ * - Probabilistic age death via ageDeathVariability ramp
  * - `energy <= cfg.energyEpsilon` (starvation)
  *
  * On death:
@@ -33,15 +33,30 @@ export interface DeathResult {
  * - Corpse is registered in the dead matter registry
  * - Zero-energy corpses are elided (spec §4.1)
  *
- * Story 4.3 AC1. Spec §5.3, §4.1, §2.5, §2.
+ * Story 4.3 AC1. Spec §5.3, §4.1, §2.5, §2. Issue #10.
  */
 export function checkDeath(
   entity: Entity,
+  rng: Rng,
   ledger: Ledger,
   deadMatter: DeadMatterRegistry,
   cfg: Config,
 ): DeathResult {
-  const dies = entity.age >= entity.lifespan || entity.energy <= cfg.energyEpsilon
+  const variability = cfg.species[entity.species].ageDeathVariability
+  const lower = entity.lifespan * (1 - variability)
+  const upper = entity.lifespan * (1 + variability)
+
+  let ageDeath: boolean
+  if (entity.age >= upper) {
+    ageDeath = true
+  } else if (entity.age < lower) {
+    ageDeath = false
+  } else {
+    const p = (entity.age - lower) / (upper - lower)
+    ageDeath = rng.float() < p
+  }
+
+  const dies = ageDeath || entity.energy <= cfg.energyEpsilon
   if (!dies) return { died: false, corpse: null }
 
   if (entity.energy > 0) {
