@@ -167,12 +167,14 @@ function applySightLine(
 /**
  * Rasterize `simState` into a `gridH × gridW` array of `Cell` values.
  *
- * @param simState  - Read-only sim snapshot.
- * @param worldW    - World width in world units.
- * @param worldH    - World height in world units.
- * @param theme     - Glyph/color mappings.
+ * @param simState   - Read-only sim snapshot.
+ * @param worldW     - World width in world units.
+ * @param worldH     - World height in world units.
+ * @param theme      - Glyph/color mappings.
  * @param selectedId - If provided, highlight this entity and render vision cone.
- * @returns         Row-major 2D array: grid[row][col].
+ * @param viewportW  - Output grid width in columns (defaults to worldW).
+ * @param viewportH  - Output grid height in rows (defaults to worldH).
+ * @returns          Row-major 2D array: grid[row][col].
  */
 export function rasterize(
   simState: SimState,
@@ -180,9 +182,11 @@ export function rasterize(
   worldH: number,
   theme: Theme,
   selectedId?: number,
+  viewportW?: number,
+  viewportH?: number,
 ): Cell[][] {
-  const gridW = worldW
-  const gridH = worldH
+  const gridW = viewportW ?? worldW
+  const gridH = viewportH ?? worldH
 
   // Initialise every cell to soil background
   const soil = theme.soil
@@ -199,7 +203,8 @@ export function rasterize(
 
   // Paint living entities
   for (const entity of simState.entities.values()) {
-    const { col, row } = worldToCell(entity.position.x, entity.position.y, gridW, gridH)
+    const col = Math.floor((entity.position.x * gridW) / worldW)
+    const row = Math.floor((entity.position.y * gridH) / worldH)
     const idx = row * gridW + col
     const p = SPECIES_PRIORITY[entity.species] ?? 99
     const current = priority[idx]

@@ -119,7 +119,15 @@ const loop = setInterval(() => {
 
   // World panel: rasterize to ASCII grid
   const selectedId = app.selectedEntity?.id
-  const grid = rasterize(state, cfg.worldW, cfg.worldH, ASCII_THEME, selectedId)
+  const grid = rasterize(
+    state,
+    cfg.worldW,
+    cfg.worldH,
+    ASCII_THEME,
+    selectedId,
+    Number(worldBox.width) - 2,
+    Number(worldBox.height) - 2,
+  )
   const worldLines = grid.map((row) => row.map((cell) => cell.glyph).join(''))
   worldBox.setContent(worldLines.join('\n'))
 
