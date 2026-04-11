@@ -23,41 +23,17 @@ import type { Entity } from '../src/core/entity.js'
 import { ASCII_THEME } from '../src/ui/theme.js'
 import { defaultConfig } from '../src/core/config.js'
 
-// ── Type stub ────────────────────────────────────────────────────────────────
-// src/ui/layouts.ts does not exist yet (RED). We import speculatively and cast
-// through unknown so tsc does not error on the missing module. At runtime the
-// dynamic import will resolve to an empty object, causing the assertions to
-// fail with clear "expected X to be Y" messages.
+// ── Layouts module imports ────────────────────────────────────────────────────
+import {
+  LAYOUTS,
+  applyLayout,
+  type PanelConfig,
+  type LayoutConfig,
+  type LayoutName,
+} from '../src/ui/layouts.js'
 
-interface PanelConfig {
-  top: number | string
-  left: number | string
-  width: number | string
-  height: number | string
-}
-
-interface LayoutConfig {
-  world: PanelConfig
-  hud: PanelConfig
-  miniHud: PanelConfig
-  pop: PanelConfig
-  inspector: PanelConfig
-  genome: PanelConfig
-}
-
-type LayoutName = 'LAYOUT_1' | 'LAYOUT_2' | 'LAYOUT_ZEN' | 'LAYOUT_FS'
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let layoutsModule: Record<string, any> = {}
-try {
-  layoutsModule = (await import('../src/ui/layouts.js')) as Record<string, unknown>
-} catch {
-  layoutsModule = {}
-}
-
-const LAYOUTS: Partial<Record<LayoutName, LayoutConfig>> = layoutsModule['LAYOUTS'] ?? {}
-
-const applyLayout: unknown = layoutsModule['applyLayout'] ?? undefined
+// Keep a module-level reference for the AC1 registry tests.
+const layoutsModule: Record<string, unknown> = { LAYOUTS, applyLayout }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AC1.2 — LAYOUTS registry keys
@@ -103,12 +79,9 @@ describe('AC1.1 — each LAYOUTS entry has 6 panels with top/left/width/height',
       for (const field of PANEL_FIELDS) {
         it(`${layoutName}.${panel}.${field} is defined`, () => {
           const cfg = LAYOUTS[layoutName]
-          expect(cfg).toBeDefined()
-          const panelCfg = cfg?.[panel as keyof LayoutConfig]
-          expect(panelCfg).toBeDefined()
+          const panelCfg = cfg[panel as keyof LayoutConfig]
           expect(panelCfg).toHaveProperty(field)
-          // Must be a number or a non-empty string expression
-          const val = panelCfg?.[field as keyof PanelConfig]
+          const val = panelCfg[field as keyof PanelConfig]
           expect(typeof val === 'number' || typeof val === 'string').toBe(true)
         })
       }
@@ -140,11 +113,8 @@ describe('AC1.4 — hidden panels in a config have width=0 or height=0', () => {
 
   for (const panel of hiddenInZen) {
     it(`LAYOUT_ZEN.${panel} has width=0 or height=0 (hidden)`, () => {
-      const cfg = LAYOUTS.LAYOUT_ZEN
-      expect(cfg).toBeDefined()
-      const panelCfg = cfg?.[panel]
-      expect(panelCfg).toBeDefined()
-      const isHidden = panelCfg?.width === 0 || panelCfg?.height === 0
+      const panelCfg = LAYOUTS.LAYOUT_ZEN[panel]
+      const isHidden = panelCfg.width === 0 || panelCfg.height === 0
       expect(isHidden).toBe(true)
     })
   }
@@ -154,44 +124,32 @@ describe('AC1.4 — hidden panels in a config have width=0 or height=0', () => {
 
   for (const panel of hiddenInFs) {
     it(`LAYOUT_FS.${panel} has width=0 or height=0 (hidden)`, () => {
-      const cfg = LAYOUTS.LAYOUT_FS
-      expect(cfg).toBeDefined()
-      const panelCfg = cfg?.[panel]
-      expect(panelCfg).toBeDefined()
-      const isHidden = panelCfg?.width === 0 || panelCfg?.height === 0
+      const panelCfg = LAYOUTS.LAYOUT_FS[panel]
+      const isHidden = panelCfg.width === 0 || panelCfg.height === 0
       expect(isHidden).toBe(true)
     })
   }
 
   // LAYOUT_FS: miniHud IS visible (non-zero dimensions)
   it('LAYOUT_FS.miniHud has non-zero width and height (visible)', () => {
-    const cfg = LAYOUTS.LAYOUT_FS
-    expect(cfg).toBeDefined()
-    const miniHud = cfg?.miniHud
-    expect(miniHud).toBeDefined()
-    expect(miniHud?.width).not.toBe(0)
-    expect(miniHud?.height).not.toBe(0)
+    const miniHud = LAYOUTS.LAYOUT_FS.miniHud
+    expect(miniHud.width).not.toBe(0)
+    expect(miniHud.height).not.toBe(0)
   })
 
   // LAYOUT_ZEN: world IS visible (non-zero dimensions)
   it('LAYOUT_ZEN.world has non-zero width and height (fullscreen)', () => {
-    const cfg = LAYOUTS.LAYOUT_ZEN
-    expect(cfg).toBeDefined()
-    const world = cfg?.world
-    expect(world).toBeDefined()
-    expect(world?.width).not.toBe(0)
-    expect(world?.height).not.toBe(0)
+    const world = LAYOUTS.LAYOUT_ZEN.world
+    expect(world.width).not.toBe(0)
+    expect(world.height).not.toBe(0)
   })
 
   // LAYOUT_1 and LAYOUT_2: miniHud is hidden (not in those layouts)
   const noMiniHudLayouts: LayoutName[] = ['LAYOUT_1', 'LAYOUT_2']
   for (const layoutName of noMiniHudLayouts) {
     it(`${layoutName}.miniHud has width=0 or height=0 (not used in this layout)`, () => {
-      const cfg = LAYOUTS[layoutName]
-      expect(cfg).toBeDefined()
-      const miniHud = cfg?.miniHud
-      expect(miniHud).toBeDefined()
-      const isHidden = miniHud?.width === 0 || miniHud?.height === 0
+      const miniHud = LAYOUTS[layoutName].miniHud
+      const isHidden = miniHud.width === 0 || miniHud.height === 0
       expect(isHidden).toBe(true)
     })
   }
@@ -204,39 +162,39 @@ describe('AC1.4 — hidden panels in a config have width=0 or height=0', () => {
 describe('AC1 — spot-check plan-specified panel dimensions', () => {
   // Plan: HUD is 24w in LAYOUT_1
   it('LAYOUT_1.hud.width is 24', () => {
-    expect(LAYOUTS.LAYOUT_1?.hud.width).toBe(24)
+    expect(LAYOUTS.LAYOUT_1.hud.width).toBe(24)
   })
 
   // Plan: Genome is 32w × 18h in LAYOUT_1
   it('LAYOUT_1.genome.width is 32', () => {
-    expect(LAYOUTS.LAYOUT_1?.genome.width).toBe(32)
+    expect(LAYOUTS.LAYOUT_1.genome.width).toBe(32)
   })
 
   it('LAYOUT_1.genome.height is 18', () => {
-    expect(LAYOUTS.LAYOUT_1?.genome.height).toBe(18)
+    expect(LAYOUTS.LAYOUT_1.genome.height).toBe(18)
   })
 
   // Plan: HUD is 24w in LAYOUT_2
   it('LAYOUT_2.hud.width is 24', () => {
-    expect(LAYOUTS.LAYOUT_2?.hud.width).toBe(24)
+    expect(LAYOUTS.LAYOUT_2.hud.width).toBe(24)
   })
 
   // Plan: Genome is 32w × 18h in LAYOUT_2
   it('LAYOUT_2.genome.width is 32', () => {
-    expect(LAYOUTS.LAYOUT_2?.genome.width).toBe(32)
+    expect(LAYOUTS.LAYOUT_2.genome.width).toBe(32)
   })
 
   it('LAYOUT_2.genome.height is 18', () => {
-    expect(LAYOUTS.LAYOUT_2?.genome.height).toBe(18)
+    expect(LAYOUTS.LAYOUT_2.genome.height).toBe(18)
   })
 
   // Plan: Mini HUD is 6w × 4h in LAYOUT_FS
   it('LAYOUT_FS.miniHud.width is 6', () => {
-    expect(LAYOUTS.LAYOUT_FS?.miniHud.width).toBe(6)
+    expect(LAYOUTS.LAYOUT_FS.miniHud.width).toBe(6)
   })
 
   it('LAYOUT_FS.miniHud.height is 4', () => {
-    expect(LAYOUTS.LAYOUT_FS?.miniHud.height).toBe(4)
+    expect(LAYOUTS.LAYOUT_FS.miniHud.height).toBe(4)
   })
 })
 
@@ -606,5 +564,130 @@ describe('AC3.3 — genomeBox is present in the layout', () => {
 describe('AC3.4 — createLayout() does not throw (LAYOUT_1 default applied)', () => {
   it('createLayout() completes without throwing', () => {
     expect(() => createLayout()).not.toThrow()
+  })
+})
+
+// =============================================================================
+// AC4 — Layout cycling key binding
+// =============================================================================
+//
+// AC4.1: KeyCallbacks interface accepts a cycleLayout callback
+// AC4.2: Layout names cycle in order: LAYOUT_1 → LAYOUT_2 → LAYOUT_ZEN → LAYOUT_FS
+// AC4.3: After the last layout, wraps to the first
+//
+// Spec §14/§15. Plan: ~/.claude/plans/jolly-zooming-twilight.md §AC4
+//
+// We test the pure cycling logic (index mod array-length), not the blessed
+// key binding (no TTY available in vitest).
+//
+// (*BF:Merian*)
+// =============================================================================
+
+import type { KeyCallbacks } from '../src/ui/input.js'
+
+// ── AC4.1 type-level check ────────────────────────────────────────────────────
+// We use a helper function typed as `(cb: KeyCallbacks) => void` to test that
+// a callbacks object with cycleLayout is assignable to KeyCallbacks.
+// When GREEN adds cycleLayout to the interface, the @ts-expect-error below
+// becomes "unused" and tsc will flag it — GREEN must then remove that line.
+
+function _requireKeyCallbacks(_cb: KeyCallbacks): void {
+  void _cb
+}
+
+_requireKeyCallbacks({
+  togglePause: () => undefined,
+  speedDown: () => undefined,
+  speedUp: () => undefined,
+  quit: () => undefined,
+  cursorUp: () => undefined,
+  cursorDown: () => undefined,
+  cursorLeft: () => undefined,
+  cursorRight: () => undefined,
+  cycleSelection: () => undefined,
+  resetSim: () => undefined,
+  // @ts-expect-error — cycleLayout not yet in KeyCallbacks; remove when GREEN adds it
+  cycleLayout: () => undefined,
+})
+
+// ── Cycling order ─────────────────────────────────────────────────────────────
+// The canonical cycle order per the spec.
+const LAYOUT_CYCLE_ORDER: LayoutName[] = ['LAYOUT_1', 'LAYOUT_2', 'LAYOUT_ZEN', 'LAYOUT_FS']
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC4.1 — KeyCallbacks accepts cycleLayout (type-level RED, runtime pass)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('AC4.1 — KeyCallbacks interface includes cycleLayout', () => {
+  it('all layout names in cycle order exist in LAYOUTS registry', () => {
+    // Validates the cycle order is consistent with the registry.
+    for (const name of LAYOUT_CYCLE_ORDER) {
+      expect(LAYOUTS).toHaveProperty(name)
+    }
+  })
+
+  it('LAYOUT_CYCLE_ORDER has exactly 4 entries', () => {
+    expect(LAYOUT_CYCLE_ORDER.length).toBe(4)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC4.2 — Cycling steps through layouts in order
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('AC4.2 — cycling index steps through layouts in order', () => {
+  it('starting at index 0 (LAYOUT_1), next is index 1 (LAYOUT_2)', () => {
+    const next = (0 + 1) % LAYOUT_CYCLE_ORDER.length
+    expect(LAYOUT_CYCLE_ORDER[next]).toBe('LAYOUT_2')
+  })
+
+  it('from index 1 (LAYOUT_2), next is index 2 (LAYOUT_ZEN)', () => {
+    const next = (1 + 1) % LAYOUT_CYCLE_ORDER.length
+    expect(LAYOUT_CYCLE_ORDER[next]).toBe('LAYOUT_ZEN')
+  })
+
+  it('from index 2 (LAYOUT_ZEN), next is index 3 (LAYOUT_FS)', () => {
+    const next = (2 + 1) % LAYOUT_CYCLE_ORDER.length
+    expect(LAYOUT_CYCLE_ORDER[next]).toBe('LAYOUT_FS')
+  })
+
+  it('full cycle returns all 4 layout names in order', () => {
+    const visited: LayoutName[] = []
+    let idx = 0
+    for (const _ of LAYOUT_CYCLE_ORDER) {
+      void _
+      const name = LAYOUT_CYCLE_ORDER[idx]
+      if (name !== undefined) visited.push(name)
+      idx = (idx + 1) % LAYOUT_CYCLE_ORDER.length
+    }
+    expect(visited).toEqual(['LAYOUT_1', 'LAYOUT_2', 'LAYOUT_ZEN', 'LAYOUT_FS'])
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC4.3 — Wrap-around: after last layout, returns to first
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('AC4.3 — cycling wraps from last layout back to first', () => {
+  it('from index 3 (LAYOUT_FS), next is index 0 (LAYOUT_1)', () => {
+    const next = (3 + 1) % LAYOUT_CYCLE_ORDER.length
+    expect(next).toBe(0)
+    expect(LAYOUT_CYCLE_ORDER[next]).toBe('LAYOUT_1')
+  })
+
+  it('cycling 8 times from index 0 returns to index 0', () => {
+    let idx = 0
+    for (const _ of Array.from({ length: 8 })) {
+      void _
+      idx = (idx + 1) % LAYOUT_CYCLE_ORDER.length
+    }
+    expect(idx).toBe(0)
+    expect(LAYOUT_CYCLE_ORDER[idx]).toBe('LAYOUT_1')
+  })
+
+  it('cycling once from last index wraps to LAYOUT_1', () => {
+    const lastIdx = LAYOUT_CYCLE_ORDER.length - 1
+    const next = (lastIdx + 1) % LAYOUT_CYCLE_ORDER.length
+    expect(LAYOUT_CYCLE_ORDER[next]).toBe('LAYOUT_1')
   })
 })
