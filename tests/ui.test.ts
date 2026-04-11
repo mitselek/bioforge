@@ -690,3 +690,190 @@ describe('AC4.3 — cycling wraps from last layout back to first', () => {
     expect(LAYOUT_CYCLE_ORDER[next]).toBe('LAYOUT_1')
   })
 })
+
+// =============================================================================
+// AC5 — Mini HUD renderer
+// =============================================================================
+//
+// AC5.1: renderMiniHud(simState) returns exactly 4 lines
+// AC5.2: each line matches format P:/H:/C:/D: + count
+// AC5.3: counts reflect simState.countsBySpecies
+//
+// Spec §14. Plan: ~/.claude/plans/jolly-zooming-twilight.md §AC5
+//
+// (*BF:Merian*)
+// =============================================================================
+
+import type { SimState } from '../src/core/sim.js'
+
+// ── Speculative import of renderMiniHud ──────────────────────────────────────
+// renderMiniHud is not yet exported from hud.ts. Probe dynamically so that
+// the test file compiles today (RED) and Linnaeus's GREEN export makes it pass.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const hudModule = (await import('../src/ui/hud.js')) as Record<string, any>
+type RenderMiniHudFn = (simState: SimState) => string[]
+
+function isRenderMiniHudFn(v: unknown): v is RenderMiniHudFn {
+  return typeof v === 'function'
+}
+
+const renderMiniHudRaw: unknown = hudModule['renderMiniHud'] ?? undefined
+const renderMiniHud: RenderMiniHudFn | undefined = isRenderMiniHudFn(renderMiniHudRaw)
+  ? renderMiniHudRaw
+  : undefined
+
+// ── SimState fixture ──────────────────────────────────────────────────────────
+
+function makeSimState(counts: {
+  plant: number
+  herbivore: number
+  carnivore: number
+  decomposer: number
+}): SimState {
+  return {
+    tick: 0,
+    entities: new Map(),
+    countsBySpecies: { ...counts },
+    totalEnergy: 10000,
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC5.1 — renderMiniHud returns exactly 4 lines
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('AC5.1 — renderMiniHud returns exactly 4 lines', () => {
+  const state = makeSimState({ plant: 250, herbivore: 93, carnivore: 40, decomposer: 50 })
+
+  it('renderMiniHud is exported from hud.ts', () => {
+    // RED: fails until GREEN exports renderMiniHud
+    assert(renderMiniHud !== undefined, 'renderMiniHud not yet exported — GREEN must export it')
+  })
+
+  it('returns an array of strings', () => {
+    assert(renderMiniHud !== undefined, 'renderMiniHud not yet exported — GREEN must export it')
+    const lines = renderMiniHud(state)
+    expect(Array.isArray(lines)).toBe(true)
+    lines.forEach((l) => {
+      expect(typeof l).toBe('string')
+    })
+  })
+
+  it('returns exactly 4 lines', () => {
+    assert(renderMiniHud !== undefined, 'renderMiniHud not yet exported — GREEN must export it')
+    const lines = renderMiniHud(state)
+    expect(lines.length).toBe(4)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC5.2 — each line matches P:/H:/C:/D: format
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('AC5.2 — each line starts with species initial and colon', () => {
+  const state = makeSimState({ plant: 250, herbivore: 93, carnivore: 40, decomposer: 50 })
+
+  it('first line starts with "P:"', () => {
+    assert(renderMiniHud !== undefined, 'renderMiniHud not yet exported — GREEN must export it')
+    const lines = renderMiniHud(state)
+    const line = lines[0]
+    expect(line).toBeDefined()
+    expect(line).toMatch(/^P:/)
+  })
+
+  it('second line starts with "H:"', () => {
+    assert(renderMiniHud !== undefined, 'renderMiniHud not yet exported — GREEN must export it')
+    const lines = renderMiniHud(state)
+    const line = lines[1]
+    expect(line).toBeDefined()
+    expect(line).toMatch(/^H:/)
+  })
+
+  it('third line starts with "C:"', () => {
+    assert(renderMiniHud !== undefined, 'renderMiniHud not yet exported — GREEN must export it')
+    const lines = renderMiniHud(state)
+    const line = lines[2]
+    expect(line).toBeDefined()
+    expect(line).toMatch(/^C:/)
+  })
+
+  it('fourth line starts with "D:"', () => {
+    assert(renderMiniHud !== undefined, 'renderMiniHud not yet exported — GREEN must export it')
+    const lines = renderMiniHud(state)
+    const line = lines[3]
+    expect(line).toBeDefined()
+    expect(line).toMatch(/^D:/)
+  })
+
+  it('all 4 lines contain only the prefix and a number (no extra labels)', () => {
+    assert(renderMiniHud !== undefined, 'renderMiniHud not yet exported — GREEN must export it')
+    const lines = renderMiniHud(state)
+    for (const line of lines) {
+      // Must match: single letter, colon, optional spaces, digits
+      expect(line).toMatch(/^[PHCD]:\s*\d+$/)
+    }
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC5.3 — counts reflect simState.countsBySpecies
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('AC5.3 — counts match simState population data', () => {
+  it('P: line contains the plant count', () => {
+    assert(renderMiniHud !== undefined, 'renderMiniHud not yet exported — GREEN must export it')
+    const state = makeSimState({ plant: 250, herbivore: 93, carnivore: 40, decomposer: 50 })
+    const lines = renderMiniHud(state)
+    const line = lines[0]
+    expect(line).toBeDefined()
+    expect(line).toContain('250')
+  })
+
+  it('H: line contains the herbivore count', () => {
+    assert(renderMiniHud !== undefined, 'renderMiniHud not yet exported — GREEN must export it')
+    const state = makeSimState({ plant: 250, herbivore: 93, carnivore: 40, decomposer: 50 })
+    const lines = renderMiniHud(state)
+    const line = lines[1]
+    expect(line).toBeDefined()
+    expect(line).toContain('93')
+  })
+
+  it('C: line contains the carnivore count', () => {
+    assert(renderMiniHud !== undefined, 'renderMiniHud not yet exported — GREEN must export it')
+    const state = makeSimState({ plant: 250, herbivore: 93, carnivore: 40, decomposer: 50 })
+    const lines = renderMiniHud(state)
+    const line = lines[2]
+    expect(line).toBeDefined()
+    expect(line).toContain('40')
+  })
+
+  it('D: line contains the decomposer count', () => {
+    assert(renderMiniHud !== undefined, 'renderMiniHud not yet exported — GREEN must export it')
+    const state = makeSimState({ plant: 250, herbivore: 93, carnivore: 40, decomposer: 50 })
+    const lines = renderMiniHud(state)
+    const line = lines[3]
+    expect(line).toBeDefined()
+    expect(line).toContain('50')
+  })
+
+  it('counts update when simState changes', () => {
+    assert(renderMiniHud !== undefined, 'renderMiniHud not yet exported — GREEN must export it')
+    const state1 = makeSimState({ plant: 10, herbivore: 20, carnivore: 30, decomposer: 40 })
+    const state2 = makeSimState({ plant: 100, herbivore: 200, carnivore: 300, decomposer: 400 })
+    const lines1 = renderMiniHud(state1)
+    const lines2 = renderMiniHud(state2)
+    expect(lines1[0]).toContain('10')
+    expect(lines2[0]).toContain('100')
+    expect(lines1[1]).toContain('20')
+    expect(lines2[1]).toContain('200')
+  })
+
+  it('zero counts are shown as 0', () => {
+    assert(renderMiniHud !== undefined, 'renderMiniHud not yet exported — GREEN must export it')
+    const state = makeSimState({ plant: 0, herbivore: 0, carnivore: 0, decomposer: 0 })
+    const lines = renderMiniHud(state)
+    for (const line of lines) {
+      expect(line).toMatch(/^[PHCD]:\s*0$/)
+    }
+  })
+})
