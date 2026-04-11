@@ -139,3 +139,105 @@ New modules: `src/main.ts`
 ### [LEARNED] 2026-04-10 20:05 — Verify test fixture math before commit
 
 When writing boundary-crossing tests (torus wrap, threshold triggers, etc.), compute the exact numeric outcome of the fixture values. Don't rely on intuition about "close enough to the edge." A quick `node -e` sanity check takes 5 seconds and prevents blocking GREEN.
+
+---
+
+### [CHECKPOINT] 2026-04-11 10:20 — Layout System Rework, AC1 RED
+
+RED commit: `d9a0529` — AC1: LayoutConfig type + LAYOUTS registry + applyLayout
+- New files: `tests/ui.test.ts` (149 tests, 146 RED) + `src/ui/layouts.ts` (type stub)
+- 21 pre-existing test files still pass (409 tests)
+
+[PATTERN] 2026-04-11 — Stub file for new-module RED tests
+
+When writing RED tests for a module that doesn't exist yet, create a minimal
+`src/ui/<module>.ts` stub that:
+1. Exports the correct TypeScript types/interfaces (satisfies tsc)
+2. Exports the expected symbols with empty/stub implementations (empty object,
+   function that throws)
+3. Uses `void param` for unused stub parameters (avoids no-unused-vars ESLint)
+
+This keeps tsc and ESLint clean while all assertion-level tests fail RED.
+
+[GOTCHA] 2026-04-11 — `_param` prefix does NOT suppress no-unused-vars in this ESLint config
+
+Despite the convention, `_` prefix on unused params triggers ESLint errors here.
+Use `void param` inside the function body instead:
+```typescript
+export function stub(boxes: T, name: U): void {
+  void boxes; void name
+  throw new Error('not implemented')
+}
+```
+
+[GOTCHA] 2026-04-11 — Dynamic `import()` inside try/catch still fails tsc if the path doesn't resolve
+
+Even with a `try { await import('../src/ui/nonexistent.js') } catch {}` pattern,
+tsc errors with TS2307 when the file doesn't exist. Solution: create the stub file
+first, then write the test file. Order matters.
+
+[PATTERN] 2026-04-11 — Use vitest assert() for type-narrowing on speculative imports
+
+When a function may or may not exist (RED phase, not yet exported), use:
+```typescript
+import { assert } from 'vitest'
+// ...
+assert(renderGenome !== undefined, 'renderGenome not yet exported')
+const lines = renderGenome(entity) // TypeScript narrowed: no longer undefined
+```
+This avoids `!` non-null assertions (forbidden) and `as Type` casts (triggers
+ESLint non-nullable-type-assertion-style). `assert()` both fails the test with
+a clear message AND narrows the type for subsequent calls.
+
+[CHECKPOINT] 2026-04-11 10:30
+
+RED commit: `1fbb5fd` — AC2 genome panel breakout (15 new failing tests)
+- 10 tests for renderGenome (not yet exported from inspector.ts)
+- 5 tests for renderInspector cleanup (opcodes/IP marker/Genome header must go)
+- 6 regression pins for renderInspector summary fields (already pass — correctly)
+
+[CHECKPOINT] 2026-04-11 11:15 — Layout System Rework, AC3–AC5 RED
+
+RED commits:
+- `6a1d...` (AC3) — createLayout() returns 6 boxes (miniHudBox + genomeBox added)
+- `...` (AC4) — KeyCallbacks.cycleLayout type-level RED + cycling index tests
+- `7f2673c` (AC5) — renderMiniHud 14 failing tests
+
+AC5 contract (for Linnaeus):
+- `renderMiniHud(simState: SimState): string[]` in `src/ui/hud.ts`
+- 4 lines: `P:<n>`, `H:<n>`, `C:<n>`, `D:<n>` — regex `^[PHCD]:\s*\d+$`
+
+AC6 (run.ts wiring) not yet started — awaiting Humboldt TEST_SPEC next session.
+
+Open stories for next session:
+- #6 — Map rescaling to fill panel
+- #7 — Sparklines into HUD + Controls panel
+
+[PATTERN] 2026-04-11 — vi.mock('blessed') for headless layout tests
+
+```typescript
+vi.mock('blessed', () => {
+  function makeBox(opts: Record<string, unknown>): Record<string, unknown> { return { ...opts, _type: 'box' } }
+  function makeScreen(): Record<string, unknown> { return { _type: 'screen', on: vi.fn(), render: vi.fn() } }
+  return { default: { screen: makeScreen, box: makeBox } }
+})
+// Then dynamic import AFTER mock registration:
+const { createLayout } = (await import('../src/ui/layout.js')) as { createLayout: () => Layout6 }
+```
+vi.mock is hoisted by Vitest transform — registered before any imports execute.
+
+[PATTERN] 2026-04-11 — Type-level RED for interface additions
+
+Use `@ts-expect-error` + a typed helper to force GREEN to add a new field to an interface:
+```typescript
+function _requireKeyCallbacks(_cb: KeyCallbacks): void { void _cb }
+_requireKeyCallbacks({
+  // ... all existing fields ...
+  // @ts-expect-error — cycleLayout not yet in KeyCallbacks; remove when GREEN adds it
+  cycleLayout: () => undefined,
+})
+```
+When GREEN adds the field, tsc fires TS2578 "unused @ts-expect-error directive" — GREEN removes the comment.
+
+[GOTCHA] 2026-04-11 — AC4: `l` key already bound to `cursorRight` in input.ts
+Linnaeus must rebind `l` to `cycleLayout` and decide how to handle the former binding.

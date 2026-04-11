@@ -1,35 +1,31 @@
 # Cuvier — PURPLE Scratchpad
 
-## [CHECKPOINT] 2026-04-11 00:37 — Session End (Phases 4-7 Complete)
+## [CHECKPOINT] 2026-04-11 11:15 — Session End (Layout System Rework Complete)
 
 ### Project State
-- **Tests:** 406 across 21 test files
-- **Source files:** 25 (17 core + 7 UI + main.ts)
+- **Tests:** 615 across 22 test files
+- **Source files:** 25 (17 core + 7 UI + main.ts) + layouts.ts = 26
 - **Fuzz:** 10 seeds x 5000 ticks = 50,000 tick-assertions passing
 - **Core simulation:** FEATURE-COMPLETE. Energy conservation proven under fuzz.
-- **UI:** Wired but needs PO visual verification and smoke tests
-- **ACs:** 142 total across all stories
+- **UI:** Layout system reworked — 4 layouts (LAYOUT_1, LAYOUT_2, LAYOUT_ZEN, LAYOUT_FS), 6 panels, cycling via `l` key. Needs PO visual verification.
+- **ACs:** 142 (phases 1-7) + 6 (Layout System Rework) = 148 total
 
-### Session Summary (Phases 4-7)
-- **24 cycles reviewed**, all ACCEPTED (0 rejections)
-- **11 refactor commits**, 13 "nothing to refactor" verdicts
-- **1 escalation** (lifespan clamp duplication — decision pending from humboldt)
+### Session Summary (Layout System Rework — AC1-AC6)
+- **6 cycles reviewed**, all ACCEPTED on first pass (0 rejections)
+- **1 refactor commit** (AC5: JSDoc reattachment in hud.ts — commit 8fc1fdd)
+- **5 "nothing to refactor" verdicts** (AC1, AC2, AC3, AC4, AC6)
+- **1 escalation** (pop/chartBox naming mismatch — deferred by humboldt)
+- Test count progression: 406 → 555 → 582 → 592 → 601 → 615
+
+### Open Issues for Next Session
+- **#6** — Map rescaling to fill panel
+- **#7** — Sparklines into HUD + Controls panel
 
 ### [GOTCHA] Blessed CJS/ESM Import Bug
 `blessed` is a CJS-only package. In the ESM project (`"type": "module"` in package.json), `import * as blessed from 'blessed'` works in `src/ui/layout.ts` (static import), but in `src/main.ts` the lazy conditional require uses `require('blessed')` behind a TTY guard + try/catch. The `@typescript-eslint/no-require-imports` ESLint rule is disabled on that line. This pattern is intentional — blessed crashes if imported when no TTY is available.
 
-### [WIP] Missing UI Smoke Tests
-UI modules (theme, worldView, hud, chart, inspector, input, layout) have NO automated tests. They were smoke-verified visually during development. Next session should add:
-- Export shape tests (functions exist and return expected types)
-- String output tests (renderHud, renderChart, renderInspector return string arrays)
-- No-terminal tests (layout.ts can't be tested without blessed mock)
-
-### [WIP] PO Visual Verification Needed
-AC7.1.1-6 (main.ts wiring) need PO visual verification:
-- Terminal renders correctly (world grid, HUD, chart, inspector panels)
-- Key bindings work (space, [, ], q, arrows/hjkl, tab, r)
-- Vision cone and sight line render on selected entity
-- Speed adjustment is perceptible
+### [DEFERRED] pop/chartBox Naming Mismatch
+`LayoutConfig` (layouts.ts) uses panel key `pop`. `Layout` (layout.ts) uses field `chartBox`. Bridged via `pop: chartBox` in the boxes mapping. Humboldt deferred this — not blocking but inconsistent. Options: rename chartBox→popBox, rename pop→chart, or accept as-is.
 
 ### [DEFERRED] Lifespan/MaturityAge Clamp — 3 Instances (Escalation Pending)
 Escalated to humboldt, no decision yet. Locations:
@@ -50,7 +46,7 @@ wasteBuffer is an accounting label within the entity pool, not a separate ledger
 Ledger epsilon and config energyEpsilon must match. The ledger previously used hardcoded 1e-6; over 5000+ ticks floating-point drift exceeded that. Fixed by passing cfg.energyEpsilon to makeLedger.
 
 **JSDoc Misplacement Pattern:**
-GREEN tends to insert new functions between an existing JSDoc and its function. Happened 3 times (metabolism.ts, sim.ts x2). Watch for in future reviews.
+GREEN tends to insert new functions between an existing JSDoc and its function. Happened 4 times now (metabolism.ts, sim.ts x2, hud.ts). Watch for in every review.
 
 **`void param` Pattern:**
 3 legitimate occurrences (eating.ts, decomposition.ts, plants.ts) + 1 false positive caught and fixed (hud.ts — cfg was actually used). Always verify the parameter IS unused before accepting `void param`.
@@ -70,3 +66,5 @@ GREEN tends to insert new functions between an existing JSDoc and its function. 
 7. For UI modules: verify architecture boundary (no core→ui imports), check `import type` usage
 8. Commit if refactor needed, or report "nothing to refactor"
 9. Send PURPLE_VERDICT to linnaeus, CYCLE_COMPLETE to humboldt
+
+(*BF:Cuvier*)

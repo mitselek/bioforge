@@ -1,5 +1,30 @@
 # Linnaeus — GREEN scratchpad
 
+## [CHECKPOINT] 2026-04-11 — Layout System Rework COMPLETE
+
+**State**: 615 tests, 22 test files. Layout System Rework story fully done (AC1–AC6).
+**HEAD**: 67416d1 (feat(run): wire genome panel + mini HUD + layout apply per frame)
+
+| AC | Files | Commit | Result |
+|----|-------|--------|--------|
+| AC1 | `src/ui/layouts.ts` | d17524f | LAYOUTS registry + applyLayout |
+| AC2 | `src/ui/inspector.ts` | 3fc251d | renderGenome extracted |
+| AC3 | `src/ui/layout.ts` | eba5200 | 6 boxes, LAYOUT_1 default |
+| AC4 | `src/ui/input.ts`, `src/run.ts` | ae0e5a3 | cycleLayout, l key |
+| AC5 | `src/ui/hud.ts` | 3bf8f37 | renderMiniHud |
+| AC6 | `src/run.ts` | 67416d1 | full wiring |
+
+### [GOTCHA] JSDoc detachment on insertion
+When inserting a new function before an existing one, the existing JSDoc block stays above the new function and detaches from its intended target. Always insert NEW functions AFTER the complete JSDoc+function block of the one above, never between a JSDoc and its function. Cuvier has caught this 4 times (metabolism.ts, sim.ts x2, hud.ts AC5).
+
+### Layout system patterns established
+- `BoxLike` local interface avoids blessed import in layouts.ts — pure config module
+- `applyLayout` uses explicit `(keyof LayoutConfig)[]` array for iteration — superior to `Object.keys` in strict TS
+- String expressions (`'100%-24'`) for dynamic sizing — blessed resolves at render time, no numeric pre-resolution needed
+- Hidden panels: `width: 0, height: 0` consistently
+
+---
+
 ## [CHECKPOINT] 2026-04-11 — Phase 5 complete
 
 **State**: 385 tests, 20 test files, 50,000 fuzz tick-assertions passing. Core sim feature-complete.
