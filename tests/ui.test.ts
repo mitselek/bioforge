@@ -877,3 +877,242 @@ describe('AC5.3 — counts match simState population data', () => {
     }
   })
 })
+
+// =============================================================================
+// Issue #6 — World map viewport scaling
+// =============================================================================
+//
+// AC1: rasterize with viewportW/viewportH returns grid of exactly viewportH×viewportW
+// AC2: viewportW=80, viewportH=30 (world dimensions) → identical to current behavior
+// AC3: viewportW=160, viewportH=60 (2×) → entity at world(39,14) maps to viewport(78,28)
+// AC4: viewportW=40, viewportH=15 (0.5×) → carnivore wins priority in shared cell
+// AC5: cells have { glyph: string, color: string } shape
+//
+// Spec §13.2. Plan: Issue #6.
+//
+// (*BF:Merian*)
+// =============================================================================
+
+import { rasterize as rasterizeBase } from '../src/ui/worldView.js'
+import type { Cell } from '../src/ui/worldView.js'
+import type { SimState as _SimState } from '../src/core/sim.js'
+import type { Theme as _Theme } from '../src/ui/theme.js'
+
+// Extended rasterize signature: viewport params are optional.
+// The current implementation ignores them (RED); GREEN must honour them.
+type RasterizeFn = (
+  simState: _SimState,
+  worldW: number,
+  worldH: number,
+  theme: _Theme,
+  selectedId?: number,
+  viewportW?: number,
+  viewportH?: number,
+) => Cell[][]
+
+const rasterize: RasterizeFn = rasterizeBase as RasterizeFn
+
+// ── Entity fixture for rasterize tests ───────────────────────────────────────
+
+function makeRasterEntity(
+  id: number,
+  species: 'plant' | 'herbivore' | 'carnivore' | 'decomposer',
+  wx: number,
+  wy: number,
+): Entity {
+  const cfg = defaultConfig()
+  const stats = cfg.species[species]
+  return makeEntity({
+    id: entityId(id),
+    species,
+    position: { x: wx, y: wy },
+    orientation: 0,
+    energy: 100,
+    lifespan: 1000,
+    maturityAge: 100,
+    genome: { tape: [], ip: 0 },
+    stats,
+  })
+}
+
+function makeStateWith(entities: Entity[]): SimState {
+  const map = new Map<number, Entity>()
+  for (const e of entities) {
+    map.set(e.id, e)
+  }
+  return {
+    tick: 0,
+    entities: map as SimState['entities'],
+    countsBySpecies: { plant: 0, herbivore: 0, carnivore: 0, decomposer: 0 },
+    totalEnergy: 10000,
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC1 — grid dimensions match viewportW × viewportH
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Issue #6 AC1 — rasterize returns grid of viewportH rows × viewportW cols', () => {
+  const worldW = 80
+  const worldH = 30
+  const state = makeStateWith([])
+
+  it('with viewportW=40, viewportH=15 — rows count equals viewportH', () => {
+    // RED: rasterize does not yet accept viewport params, returns 30 rows not 15
+    const grid = rasterize(state, worldW, worldH, ASCII_THEME, undefined, 40, 15)
+    expect(grid.length).toBe(15)
+  })
+
+  it('with viewportW=40, viewportH=15 — each row has viewportW columns', () => {
+    const grid = rasterize(state, worldW, worldH, ASCII_THEME, undefined, 40, 15)
+    for (const row of grid) {
+      expect(row.length).toBe(40)
+    }
+  })
+
+  it('with viewportW=160, viewportH=60 — rows count equals 60', () => {
+    const grid = rasterize(state, worldW, worldH, ASCII_THEME, undefined, 160, 60)
+    expect(grid.length).toBe(60)
+  })
+
+  it('with viewportW=160, viewportH=60 — each row has 160 columns', () => {
+    const grid = rasterize(state, worldW, worldH, ASCII_THEME, undefined, 160, 60)
+    for (const row of grid) {
+      expect(row.length).toBe(160)
+    }
+  })
+
+  it('with viewportW=1, viewportH=1 — returns a single cell', () => {
+    const grid = rasterize(state, worldW, worldH, ASCII_THEME, undefined, 1, 1)
+    expect(grid.length).toBe(1)
+    expect(grid[0]?.length).toBe(1)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC2 — viewportW=worldW, viewportH=worldH → same output as no-viewport call
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Issue #6 AC2 — viewportW=80, viewportH=30 is identical to current behavior', () => {
+  // A plant at world(20, 10) — a position that won't be split by any cell boundary
+  const entities = [makeRasterEntity(1, 'plant', 20, 10)]
+  const state = makeStateWith(entities)
+
+  it('grid dimensions are still 30 rows × 80 cols when viewport equals world', () => {
+    const grid = rasterize(state, 80, 30, ASCII_THEME, undefined, 80, 30)
+    expect(grid.length).toBe(30)
+    expect(grid[0]?.length).toBe(80)
+  })
+
+  it('plant appears at col=20, row=10 when viewport matches world size', () => {
+    const grid = rasterize(state, 80, 30, ASCII_THEME, undefined, 80, 30)
+    const cell = grid[10]?.[20]
+    expect(cell).toBeDefined()
+    // plant glyph in ASCII_THEME is '*'
+    expect(cell?.glyph).toBe('*')
+  })
+
+  it('result matches rasterize without viewport params (backward compatibility)', () => {
+    const withViewport = rasterize(state, 80, 30, ASCII_THEME, undefined, 80, 30)
+    const withoutViewport = rasterize(state, 80, 30, ASCII_THEME, undefined)
+    expect(JSON.stringify(withViewport)).toBe(JSON.stringify(withoutViewport))
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC3 — viewportW=160, viewportH=60 (2×): entity at world(39,14) → viewport(78,28)
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Fixture math (verified):
+//   col = floor(39 * 160 / 80) = 78
+//   row = floor(14 * 60  / 30) = 28
+
+describe('Issue #6 AC3 — 2× scale maps entity to correct viewport cell', () => {
+  // Herbivore at world(39,14) → viewport col=78, row=28
+  const entities = [makeRasterEntity(1, 'herbivore', 39, 14)]
+  const state = makeStateWith(entities)
+
+  it('herbivore glyph appears at viewport col=78, row=28 (2× scale)', () => {
+    // RED: rasterize uses gridW=worldW=80, so entity at x=39 lands at col=39, not 78
+    const grid = rasterize(state, 80, 30, ASCII_THEME, undefined, 160, 60)
+    const cell = grid[28]?.[78]
+    expect(cell).toBeDefined()
+    // herbivore glyph in ASCII_THEME is 'h'
+    expect(cell?.glyph).toBe('h')
+  })
+
+  it('herbivore does NOT appear at the non-scaled position col=39, row=14', () => {
+    const grid = rasterize(state, 80, 30, ASCII_THEME, undefined, 160, 60)
+    const wrongCell = grid[14]?.[39]
+    // The wrong cell should be soil (glyph='.') not the entity
+    expect(wrongCell?.glyph).not.toBe('h')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC4 — viewportW=40, viewportH=15 (0.5×): priority rendering in shared cells
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Fixture math (verified):
+//   world(38,12) → col=floor(38*40/80)=19, row=floor(12*15/30)=6
+//   world(39,13) → col=floor(39*40/80)=19, row=floor(13*15/30)=6
+//   Both map to viewport(19,6) — carnivore (priority=0) wins over herbivore (priority=1)
+
+describe('Issue #6 AC4 — 0.5× scale: priority rendering resolves shared cells', () => {
+  // Carnivore at world(38,12), herbivore at world(39,13) — both collapse to viewport(19,6)
+  const entities = [
+    makeRasterEntity(1, 'carnivore', 38, 12),
+    makeRasterEntity(2, 'herbivore', 39, 13),
+  ]
+  const state = makeStateWith(entities)
+
+  it('carnivore wins shared cell at viewport(19,6) (0.5× scale)', () => {
+    // RED: rasterize uses gridW=worldW, entities map to different cols not shared cell
+    const grid = rasterize(state, 80, 30, ASCII_THEME, undefined, 40, 15)
+    const cell = grid[6]?.[19]
+    expect(cell).toBeDefined()
+    // carnivore glyph in ASCII_THEME is 'C'
+    expect(cell?.glyph).toBe('C')
+  })
+
+  it('no herbivore glyph at viewport(19,6) when carnivore takes priority', () => {
+    const grid = rasterize(state, 80, 30, ASCII_THEME, undefined, 40, 15)
+    const cell = grid[6]?.[19]
+    expect(cell?.glyph).not.toBe('h')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AC5 — cells have { glyph: string, color: string } shape
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Issue #6 AC5 — grid cells have { glyph, color } shape', () => {
+  const state = makeStateWith([makeRasterEntity(1, 'plant', 5, 5)])
+
+  it('every cell in a 40×15 grid has a string glyph', () => {
+    const grid = rasterize(state, 80, 30, ASCII_THEME, undefined, 40, 15)
+    for (const row of grid) {
+      for (const cell of row) {
+        expect(typeof cell.glyph).toBe('string')
+      }
+    }
+  })
+
+  it('every cell in a 40×15 grid has a string color', () => {
+    const grid = rasterize(state, 80, 30, ASCII_THEME, undefined, 40, 15)
+    for (const row of grid) {
+      for (const cell of row) {
+        expect(typeof cell.color).toBe('string')
+      }
+    }
+  })
+
+  it('glyph string is non-empty', () => {
+    const grid = rasterize(state, 80, 30, ASCII_THEME, undefined, 40, 15)
+    for (const row of grid) {
+      for (const cell of row) {
+        expect(cell.glyph.length).toBeGreaterThan(0)
+      }
+    }
+  })
+})
