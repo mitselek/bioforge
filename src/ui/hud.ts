@@ -41,6 +41,24 @@ function fmt(n: number, decimals: number, width: number): string {
  *   Poop:      <count>
  *   Compost:   <count>
  */
+/**
+ * Return mini HUD lines showing per-species counts for LAYOUT_FS overlay.
+ *
+ * Returns exactly 4 lines: P:<plant>, H:<herbivore>, C:<carnivore>, D:<decomposer>.
+ */
+export function renderMiniHud(simState: SimState): string[] {
+  const plant = simState.countsBySpecies['plant'] ?? 0
+  const herbivore = simState.countsBySpecies['herbivore'] ?? 0
+  const carnivore = simState.countsBySpecies['carnivore'] ?? 0
+  const decomposer = simState.countsBySpecies['decomposer'] ?? 0
+  return [
+    `P:${String(plant)}`,
+    `H:${String(herbivore)}`,
+    `C:${String(carnivore)}`,
+    `D:${String(decomposer)}`,
+  ]
+}
+
 export function renderHud(simState: SimState, cfg: Config): string[] {
   const livingEnergy = Array.from(simState.entities.values()).reduce((sum, e) => sum + e.energy, 0)
   const soilEnergy = simState.totalEnergy - livingEnergy
